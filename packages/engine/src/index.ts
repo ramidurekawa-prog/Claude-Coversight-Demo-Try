@@ -25,3 +25,5 @@ export * from "./ledger.js";
 export * from "./queue.js";
 export * from "./rollup.js";
 export * from "./pipeline.js";
+export * from "./adjustments.js";
+export * from "./propose.js";

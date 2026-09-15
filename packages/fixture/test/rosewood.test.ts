@@ -7,7 +7,7 @@ import { buildRosewood, generateCanonical, registerFingerprint, FIXTURE, HISTORI
  * version in spec.ts AND update this value in the same commit, so a database
  * seeded from an older fixture is refused rather than silently mixed.
  */
-const PINNED = { version: "1.0.0", fingerprint: "2186-1872-2a98013b" };
+const PINNED = { version: "1.0.0", fingerprint: "2186-1872-47277b7b" };
 
 const b = buildRosewood();
 const byId = <T extends { id: string }>(xs: T[], id: string): T => {

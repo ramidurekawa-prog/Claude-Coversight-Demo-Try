@@ -6,7 +6,7 @@
  * adjustment out of an evaluated intervention.
  */
 import type { Adjustment, AppliedChange, FeedHealth, InterventionDecl, InterventionEval, LedgerAction, LedgerFinding, LedgerSide, Period, PriorFinding, Register } from "@streamline/engine";
-import { accrualInPeriod, addDays, daysBetween, evaluateIntervention, expireStale, feedHealth, formatMonthLong, monthOf, recoverableOf, rollupRegister, runDetectionPass } from "@streamline/engine";
+import { accrualInPeriod, addDays, daysBetween, deriveAdjustments, evaluateIntervention, expireStale, feedHealth, formatMonthLong, monthOf, numberAdjustments, recoverableOf, rollupRegister, runDetectionPass, type UnnumberedAdjustment } from "@streamline/engine";
 import { buildFeeds, generateCanonical, type RosewoodCanonical } from "./generate.js";
 import { ACTIONS, DISPUTE_ON, DISPUTE_TEMPLATE, HISTORICAL_FINDINGS, INTERVENTIONS, INVESTIGATIONS, REJECTED_FINDING, ledgerSideFor } from "./history.js";
 import { FIXTURE, LOCATIONS, ORG } from "./spec.js";
@@ -22,6 +22,8 @@ export interface BuildOptions {
   priorFindings?: ReadonlyMap<string, PriorFinding>;
   /** Actions created inside the product. */
   userActions?: LedgerAction[];
+  /** Adjustments already on the record — ids are kept, never renumbered. */
+  priorAdjustments?: Adjustment[];
 }
 
 export interface RosewoodBuild {
@@ -138,21 +140,9 @@ export function buildRosewood(opts: BuildOptions = {}): RosewoodBuild {
 
   const interventions = [...declared, ...(opts.userInterventions ?? [])].map((iv) => evaluateIntervention(iv, register, feeds, asOf));
 
-  // Adjustments come OUT of evaluated interventions — reversal, decay, dispute — never in.
-  const adjustments: Adjustment[] = [];
-  for (const iv of interventions) {
-    if (iv.reversal && iv.reversedClaimCents != null) {
-      adjustments.push({ id: "", kind: "Reversal", interventionId: iv.id, title: iv.title, loc: iv.loc, cents: iv.adjustmentCents, status: "credited", reason: iv.reversal.reason, by: iv.reversal.by, on: iv.reversal.on, originalCents: iv.reversedClaimCents, weeks: iv.weeksBooked, note: iv.reversal.creditNote, foundBy: iv.reversal.foundBy });
-    }
-    if (iv.persistence?.status === "decaying" && iv.result.money) {
-      const atRate = Math.round((iv.result.money.cents / 7) * Math.max(0, daysBetween(iv.eligibleOn, asOf)));
-      const cents = iv.realizedCents - atRate;
-      if (cents < 0) {
-        const checkDate = iv.persistenceSeries[iv.persistenceSeries.length - 1]?.date ?? asOf;
-        adjustments.push({ id: "", kind: "Decay", interventionId: iv.id, title: iv.title, loc: iv.loc, cents, status: "accepted", reason: `The effect is decaying: retention ${Math.round((iv.persistence.retention ?? 0) * 100)}% of the verified rate after ${iv.persistence.elapsedWeeks ?? 0} weeks, half-life ${(iv.persistence.halfLifeWeeks ?? 0).toFixed(1)} weeks. Accrual follows the measured decay, not the verified rate.`, by: "Verification decision service", on: checkDate, originalCents: atRate, weeks: iv.persistence.elapsedWeeks ?? 0, note: "An upkeep action is on the plan." });
-      }
-    }
-  }
+  // Adjustments come OUT of evaluated interventions — reversal, decay — never in; the
+  // controller's dispute is the one declared entry, and it attaches to a computed bridge.
+  const unnumbered: UnnumberedAdjustment[] = deriveAdjustments(interventions, asOf);
 
   // Ledger sides for the last closed month, and the one dispute the controller raised.
   const closedPeriod = closedPeriodFor(asOf);
@@ -171,10 +161,9 @@ export function buildRosewood(opts: BuildOptions = {}): RosewoodBuild {
   const disputed = Object.entries(ledgerSides).sort((a, b) => b[1].unexplainedCents - a[1].unexplainedCents)[0];
   if (disputed && disputed[1].unexplainedCents > 0 && DISPUTE_ON <= asOf) {
     const iv = interventions.find((x) => x.id === disputed[0]) as InterventionEval;
-    adjustments.push({ id: "", ...DISPUTE_TEMPLATE(iv, disputed[1], claims[iv.id] ?? 0, closedPeriod.label) });
+    unnumbered.push(DISPUTE_TEMPLATE(iv, disputed[1], claims[iv.id] ?? 0, closedPeriod.label));
   }
-  adjustments.sort((a, b) => (a.on < b.on ? -1 : a.on > b.on ? 1 : a.interventionId.localeCompare(b.interventionId)));
-  adjustments.forEach((a, i) => (a.id = `ADJ-${String(i + 1).padStart(3, "0")}`));
+  const adjustments: Adjustment[] = numberAdjustments(opts.priorAdjustments ?? [], unnumbered);
 
   const actions = [...ACTIONS, ...(opts.userActions ?? [])];
 

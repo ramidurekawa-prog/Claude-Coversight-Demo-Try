@@ -164,6 +164,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.5.1
         version: 0.5.8
+      '@node-rs/argon2':
+        specifier: ^2.0.2
+        version: 2.2.1
       '@streamline/engine':
         specifier: workspace:*
         version: link:../engine
