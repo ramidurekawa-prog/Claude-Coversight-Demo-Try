@@ -7,6 +7,8 @@ export default defineConfig({
       "packages/fixture",
       "packages/contracts",
       "packages/db",
+      "packages/ui",
+      "apps/api",
       "apps/web",
     ],
     passWithNoTests: true,

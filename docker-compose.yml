@@ -1,0 +1,15 @@
+# Optional: a real Postgres for the demo instead of the in-process PGlite default.
+# docker compose up -d postgres && export DATABASE_URL=postgres://streamline:streamline@localhost:5432/streamline
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: streamline
+      POSTGRES_PASSWORD: streamline
+      POSTGRES_DB: streamline
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+volumes:
+  pgdata:

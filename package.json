@@ -8,9 +8,9 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "dev": "pnpm --filter @streamline/web dev",
-    "build": "pnpm -r --filter './packages/**' build && pnpm --filter @streamline/web build",
-    "start": "pnpm --filter @streamline/web start",
+    "dev": "concurrently -n api,web -c blue,green \"pnpm --filter @streamline/api dev\" \"pnpm --filter @streamline/web dev\"",
+    "build": "pnpm -r --filter \"./packages/**\" build && pnpm --filter @streamline/api build && pnpm --filter @streamline/web build",
+    "start": "concurrently -n api,web -c blue,green \"pnpm --filter @streamline/api start\" \"pnpm --filter @streamline/web start\"",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
@@ -18,7 +18,9 @@
     "e2e": "playwright test",
     "db:reset": "pnpm --filter @streamline/db reset",
     "db:seed": "pnpm --filter @streamline/db seed",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "dev:api": "pnpm --filter @streamline/api dev",
+    "dev:web": "pnpm --filter @streamline/web dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
@@ -30,11 +32,12 @@
     "tsx": "^4.20.0",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "concurrently": "^9.2.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "better-sqlite3",
+      "@node-rs/argon2",
       "esbuild",
       "sharp",
       "@tailwindcss/oxide",

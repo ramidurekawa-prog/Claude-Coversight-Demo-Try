@@ -7,11 +7,8 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-!packages/db/fixtures/*.db
+packages/db/data/
+apps/api/data/
 playwright-report/
 test-results/
 e2e/.auth/

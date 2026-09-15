@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@streamline/contracts": "workspace:*",
-    "@streamline/db": "workspace:*",
     "@streamline/engine": "workspace:*",
     "next": "16.3.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@streamline/ui": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",
