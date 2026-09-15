@@ -51,6 +51,8 @@ export interface VerificationInput {
   recurringCostCents?: number;
   overlapStatus?: OverlapStatus;
   overlapDeductionCents?: number;
+  /** The modelled weekly value at approval — lets the service tell "could not have seen it" from "did not work". */
+  projectedCents?: number;
 }
 
 export interface VerificationContext {
@@ -172,7 +174,14 @@ export function verificationService(iv: VerificationInput, ctx: VerificationCont
   if (est.preFit < 0.4 && Math.abs(est.point) < est.mde) {
     return R("inconclusive", { why: `No valid control: the treated and comparison series correlate at r = ${est.preFit.toFixed(2)} before execution, and the observed effect ${formatUsd(savings)} is inside an MDE of ${formatUsd(est.mde)}. The design could not answer the question.` });
   }
-  if (Math.abs(est.point) < est.mde) return R("no_effect", { why: `The change was made and the outcome did not move: ${formatUsd(savings)} against an MDE of ${formatUsd(est.mde)}, on a control that fits at r = ${est.preFit.toFixed(2)}.` });
+  if (Math.abs(est.point) < est.mde) {
+    // A positive that clears zero but sits below the effect the window was designed to see is
+    // real and under-powered: reported as directional, never banked.
+    if (savings > 0 && lower > 0) return R("directional", { why: `Point estimate ${formatUsd(savings)} clears zero (${formatPct(1 - est.alpha, 0)} lower bound ${formatUsd(lower)}) but is below the ${formatUsd(est.mde)} this window was designed to detect. An under-powered result is directional, not bookable; extend the window.` });
+    // A window that could never have seen the projected effect proves nothing either way.
+    if (iv.projectedCents != null && iv.projectedCents > 0 && est.mde > iv.projectedCents) return R("inconclusive", { why: `We could not tell: the window's minimum detectable effect is ${formatUsd(est.mde)}/wk against a projection of ${formatUsd(iv.projectedCents)}/wk, so even a fully delivered result would not have cleared it. That is a design failure, not a null.` });
+    return R("no_effect", { why: `The change was made and the outcome did not move: ${formatUsd(savings)} against an MDE of ${formatUsd(est.mde)}, on a control that fits at r = ${est.preFit.toFixed(2)}.` });
+  }
   if (savings < 0 && Math.abs(est.point) >= est.mde) return R("negative", { why: `The outcome moved the wrong way by ${formatUsd(-savings)}. A reversal is recommended.` });
   if (ctx.attributionConflict) return R("attribution_conflict", { why: ctx.attributionConflict });
   if (lower <= 0) return R("directional", { why: `Point estimate ${formatUsd(savings)} points the right way; the ${formatPct(1 - est.alpha, 0)} lower bound is ${formatUsd(lower)} and does not clear zero.` });

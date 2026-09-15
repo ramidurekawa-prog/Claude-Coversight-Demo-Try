@@ -216,7 +216,13 @@ importers:
       '@streamline/engine':
         specifier: workspace:*
         version: link:../engine
+      uuid:
+        specifier: ^14.0.0
+        version: 14.0.2
     devDependencies:
+      '@types/node':
+        specifier: ^22.19.0
+        version: 22.20.2
       typescript:
         specifier: 5.9.3
         version: 5.9.3

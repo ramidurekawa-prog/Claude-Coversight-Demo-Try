@@ -7,7 +7,7 @@
 import { addDays, daysBetween, type IsoDate } from "./dates.js";
 import { runGuardrails, type GuardrailResult } from "./guardrails.js";
 import { did, itemSeries, reconcileA, serviceInScope, svSeries, toWeekly, type DatedValue, type Estimate, type EstimateOk, type ServiceScope } from "./measure.js";
-import type { Cents } from "./money.js";
+import { formatUsd, type Cents } from "./money.js";
 import { decayAt, persistence, type PersistenceResult } from "./persistence.js";
 import type { FeedHealth, ItemDay, Register, Service } from "./register.js";
 import { groupBy, skuById } from "./register.js";
@@ -17,9 +17,9 @@ import type { InterventionState } from "./states.js";
 import { mean, sum } from "./stats.js";
 import { verificationService, type DataQualityVerdict, type ExecutionFidelity, type OverlapStatus, type VerificationResult } from "./verify.js";
 
-export type MetricKey = "labour_per_cover" | "comps_per_cover" | "cm_per_cover" | "cogs_per_cover" | "net_per_cover" | "ticket_min" | "item_cost_per_unit" | "sku_unit_price";
+export type MetricKey = "labour_per_cover" | "comps_per_cover" | "cm_per_cover" | "cogs_per_cover" | "net_per_cover" | "ticket_min" | "item_cost_per_unit" | "sku_unit_price" | "sku_cost_per_plate";
 
-export const SERVICE_METRICS: Record<Exclude<MetricKey, "item_cost_per_unit" | "sku_unit_price">, (s: Service) => number> = {
+export const SERVICE_METRICS: Record<Exclude<MetricKey, "item_cost_per_unit" | "sku_unit_price" | "sku_cost_per_plate">, (s: Service) => number> = {
   labour_per_cover: (s) => s.laborCents / Math.max(s.covers, 1),
   comps_per_cover: (s) => s.compsCents / Math.max(s.covers, 1),
   cm_per_cover: (s) => (s.netCents - s.cogsCents) / Math.max(s.covers, 1),
@@ -108,7 +108,7 @@ export interface InterventionDecl {
   treatItems?: { loc: string; items: string[] } | undefined;
   controlItems?: { loc: string; items: string[] } | undefined;
   metricKey: MetricKey;
-  grain: "cover" | "unit" | "sku" | "service";
+  grain: "cover" | "unit" | "sku" | "sku_unit" | "service";
   direction: "down_is_saving" | "up_is_saving";
   weekly: boolean;
   estimator: "did" | "reconcile";
@@ -177,7 +177,29 @@ const CLOSED_STATE: Partial<Record<VerificationOutcome, InterventionState>> = {
 export function buildSeries(iv: InterventionDecl, reg: Register): { treatment: DatedValue[]; control: DatedValue[] } {
   let treatment: DatedValue[];
   let control: DatedValue[];
-  if (iv.treatSku) {
+  if (iv.metricKey === "sku_cost_per_plate" && iv.treatSku) {
+    // Weekly pounds of the SKU purchased ÷ plates sold that use it, PRICED AT THE UNIT PRICE
+    // FROZEN AT EXECUTION (Family C portion lever measured through invoices — G10). Portion is a
+    // quantity lever: a vendor price move inside the window belongs to purchasing, not here, and a
+    // common multiplicative price shock would otherwise break the additive comparison.
+    const sku = iv.treatSku;
+    const linked = reg.menu.filter((m) => m.usesSku?.sku === sku).map((m) => m.id);
+    const priceRows = reg.invoices.filter((r) => r.sku === sku && r.week < iv.execOn && r.week >= addDays(iv.execOn, -28));
+    const frozenQty = priceRows.reduce((a, r) => a + r.qty, 0);
+    const frozenPrice = frozenQty > 0 ? priceRows.reduce((a, r) => a + r.extendedCents, 0) / frozenQty : mean(reg.invoices.filter((r) => r.sku === sku).map((r) => r.unitPriceCents)) || 1;
+    const perPlate = (locs: readonly string[]): DatedValue[] => {
+      const inv = groupBy(reg.invoices.filter((r) => r.sku === sku && locs.includes(r.loc)), (r) => r.week);
+      const out: DatedValue[] = [];
+      for (const [w, rows] of [...inv.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+        const wkEnd = addDays(w, 7);
+        const plates = reg.itemDays.filter((r) => locs.includes(r.loc) && linked.includes(r.item) && r.date >= w && r.date < wkEnd).reduce((a, r) => a + r.units, 0);
+        if (plates > 0) out.push({ date: w, y: (rows.reduce((a, r) => a + r.qty, 0) * frozenPrice) / plates });
+      }
+      return out;
+    };
+    treatment = perPlate(iv.treatScope?.locs ?? iv.locs);
+    control = perPlate(iv.controlScope?.locs ?? []);
+  } else if (iv.treatSku) {
     // Family A: observed dollars in the restaurant's own invoices; the comparison is the
     // same vendor's other SKUs, indexed to their own pre-period mean.
     const priceSeries = (skus: string[]) => {
@@ -252,6 +274,12 @@ export function evaluateIntervention(decl: InterventionDecl, reg: Register, feed
     const u = reg.itemDays.filter((r) => r.loc === ti.loc && ti.items.includes(r.item) && r.date >= postLo && r.date < postHi).reduce((a, r) => a + r.units, 0);
     wkFactor = (u / winDays) * 7;
     wkBasis = `${Math.round(wkFactor)} units/week of the treated item`;
+  } else if (iv.grain === "sku_unit") {
+    const linked = reg.menu.filter((m) => m.usesSku?.sku === iv.treatSku).map((m) => m.id);
+    const locs = iv.treatScope?.locs ?? iv.locs;
+    const u = reg.itemDays.filter((r) => locs.includes(r.loc) && linked.includes(r.item) && r.date >= postLo && r.date < postHi).reduce((a, r) => a + r.units, 0);
+    wkFactor = (u / winDays) * 7;
+    wkBasis = `${Math.round(wkFactor)} plates/week using the SKU at the treated room`;
   } else if (iv.grain === "sku") {
     const q = reg.invoices.filter((r) => r.sku === iv.treatSku && r.week >= postLo && r.week < postHi).reduce((a, r) => a + r.qty, 0);
     const wks = Math.max(1, Math.round(winDays / 7));
@@ -299,11 +327,12 @@ export function evaluateIntervention(decl: InterventionDecl, reg: Register, feed
     observed = reg.services.filter((s) => inScope(s) && s.date >= iv.execOn && s.date < asOf).length;
   } else {
     result = verificationService(
-      { estimate, executionFidelity: iv.executionFidelity, plan: iv.plan, incrementalCostCents: iv.incrementalCostCents, recurringCostCents: iv.recurringCostCents, overlapStatus: iv.overlapStatus ?? "none", overlapDeductionCents: iv.overlapDeductionCents ?? 0 },
+      { estimate, executionFidelity: iv.executionFidelity, plan: iv.plan, incrementalCostCents: iv.incrementalCostCents, recurringCostCents: iv.recurringCostCents, overlapStatus: iv.overlapStatus ?? "none", overlapDeductionCents: iv.overlapDeductionCents ?? 0, projectedCents: iv.projectedCents },
       { guardrailResults, dataQuality },
     );
     state = CLOSED_STATE[result.outcome] ?? "closed";
   }
+  const verdictState: InterventionState = state;
 
   // Persistence, for the ones that verified: realised weekly effect after the window,
   // re-estimated on a rolling basis.
@@ -359,7 +388,13 @@ export function evaluateIntervention(decl: InterventionDecl, reg: Register, feed
   const history: HistoryEvent[] = [{ on: iv.decidedOn, state: "approved", by: iv.approver, note: `Approved at ${iv.approvalTier} tier. The measurement plan is now frozen.` }];
   if (executed) history.push({ on: iv.execOn, state: "executed", by: iv.owner, note: "Execution evidence resolved against stored register records." });
   if (executed) history.push({ on: windowClosed ? eligibleOn : iv.execOn, state: windowClosed ? "measuring" : "measurement_pending", by: "System", note: windowClosed ? "Measurement window closed; routed to the verification decision service." : "Window accumulating." });
-  if (windowClosed) history.push({ on: eligibleOn, state, by: "Verification decision service", note: result.why });
+  if (windowClosed) history.push({ on: eligibleOn, state: verdictState, by: "Verification decision service", note: iv.reversal && reversedClaimCents != null ? `Verified at ${formatUsd(reversedClaimCents)}/wk; every blocking gate passed.` : result.why });
+  if (windowClosed && persist) {
+    const checks = persistenceSeries.slice(1);
+    checks.forEach((p, i) => {
+      if ((i + 1) % 4 === 0) history.push({ on: p.date, state: persist?.status === "decaying" && i + 1 === checks.length - (checks.length % 4) ? "decayed" : "persistent", by: "System", note: `Persistence check ${(i + 1) / 4}: ${formatUsd(Math.round(p.y))}/wk against ${formatUsd(result.money?.cents ?? 0)}/wk verified.` });
+    });
+  }
   if (iv.reversal && reversedClaimCents != null) history.push({ on: iv.reversal.on, state: "reversed", by: iv.reversal.by, note: iv.reversal.reason });
 
   return {

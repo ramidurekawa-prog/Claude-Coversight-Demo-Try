@@ -58,6 +58,8 @@ export interface FindingCore {
   series: SeriesPoint[];
   chartBaselineN: number | null;
   evidenceCount: number;
+  /** Days between observations at the grain the detector judged (1 = per service, 7 = per week). */
+  cadenceDays: number;
   causes: Cause[];
   remedy: Remedy;
   guardrails: string[];
@@ -115,7 +117,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
         if (recent.length < 6 || prior.length < 6) continue;
         const baselineN = Math.min(14, excess.length - 6);
         const cus = cusumChart(excess, { baselineN });
-        const onset = driftOnset(cus);
+        const onset = driftOnset(cus, { direction: "high" });
         const delta = mean(recent.map((e) => e.v)) - mean(prior.map((e) => e.v));
         if (delta < 4.5) continue; // below the MDE at this grain
         if (!onset || onset.direction !== "high") continue;
@@ -146,6 +148,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
           series: excess.map((e) => ({ date: e.date, v: e.v })),
           chartBaselineN: baselineN,
           evidenceCount: recent.length,
+          cadenceDays: 7,
           causes: [
             { cause: `The schedule template was not re-cut after ${DOW_SHORT[dow]} volume fell`, p: 0.62, sep: "Compare the published template against the covers curve for the last eight weeks" },
             { cause: "Servers held over from the prior service rather than cut on the floor", p: 0.24, sep: "Clock-out times against the pacing curve" },
@@ -176,7 +179,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
       .map(([w, rs]) => ({ date: w, v: sum(rs.map((r) => r.extendedCents)) / Math.max(sum(rs.map((r) => r.qty)), 1e-9), qty: sum(rs.map((r) => r.qty)) }));
     const cus = cusumChart(byWeek, { baselineN: 10 });
-    const onset = driftOnset(cus);
+    const onset = driftOnset(cus, { direction: "high" });
     if (!onset || onset.direction !== "high") continue;
     const pre = byWeek.filter((p) => p.date < onset.onsetDate);
     const post = byWeek.filter((p) => p.date >= onset.signalDate);
@@ -213,6 +216,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
       series: byWeek.map((p) => ({ date: p.date, v: p.v })),
       chartBaselineN: 10,
       evidenceCount: post.length,
+      cadenceDays: 7,
       causes: [
         { cause: "Vendor list price increase applied without notice", p: 0.71, sep: "Compare the same SKU at the other two vendors on the approved list" },
         { cause: "Fell off a contracted tier by ordering below the volume break", p: 0.19, sep: "Weekly volume against the tier threshold in the contract" },
@@ -256,7 +260,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
             return { date: w, bought, theoretical: sold, v: sold > 0 ? bought / sold : 1, price: mean(rs.map((r) => r.unitPriceCents)) };
           });
         const cus = cusumChart(series, { baselineN: 10 });
-        const onset = driftOnset(cus);
+        const onset = driftOnset(cus, { direction: "high" });
         if (!onset || onset.direction !== "high") continue;
         const post = series.filter((p) => p.date >= onset.signalDate);
         const pre = series.filter((p) => p.date < onset.onsetDate);
@@ -291,6 +295,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
           series: series.map((p) => ({ date: p.date, v: p.v })),
           chartBaselineN: 10,
           evidenceCount: post.length,
+          cadenceDays: 7,
           causes: [
             { cause: "Portioning drifted — the spec is 6oz and the line is plating closer to 7½", p: 0.58, sep: "Weigh twenty plates across two services against the spec card" },
             { cause: "Trim yield fell — a different cut is arriving under the same SKU", p: 0.27, sep: "Yield test on one case against the recorded yield in the recipe file" },
@@ -318,16 +323,29 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
     for (const dp of dayparts) {
       const sv = reg.services.filter((s) => s.loc === L.id && s.daypart === dp.id && s.date >= weeksBack(26));
       if (sv.length < 40) continue;
+      // The room against its own history. A week the whole group comped heavily is not this
+      // room's finding: if the other rooms' pooled chart is breaching over the same services,
+      // the detector stands down and the group-level cause is someone else's finding.
       const series = sv.map((s) => ({ date: s.date, v: s.compsCents / Math.max(s.grossCents, 1) }));
       const chart = ewmaChart(series, { baselineN: 28 });
       const recent = chart.points.slice(-28);
-      const breaching = recent.filter((p) => p.signal === "high");
-      if (breaching.length < 8) continue;
+      if (recent.filter((p) => p.signal === "high").length < 8) continue;
+      const peerByDate = new Map<string, { comps: number; gross: number }>();
+      for (const s of reg.services) {
+        if (s.loc === L.id || s.daypart !== dp.id || s.date < weeksBack(26)) continue;
+        const cur = peerByDate.get(s.date) ?? { comps: 0, gross: 0 };
+        peerByDate.set(s.date, { comps: cur.comps + s.compsCents, gross: cur.gross + s.grossCents });
+      }
+      const peers = [...peerByDate.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([date, p]) => ({ date, v: p.gross > 0 ? p.comps / p.gross : 0 }));
+      if (peers.length >= 40) {
+        const peerChart = ewmaChart(peers, { baselineN: 28 });
+        if (peerChart.points.slice(-28).filter((p) => p.signal === "high").length >= 8) continue;
+      }
       const excessRate = mean(recent.map((p) => p.z)) - chart.mu;
       const weekly = Math.round(excessRate * sum(sv.filter((s) => s.date >= weeksBack(1)).map((s) => s.grossCents)));
       if (weekly < 5000) continue;
       const cus = cusumChart(series, { baselineN: 28 });
-      const onset = driftOnset(cus);
+      const onset = driftOnset(cus, { direction: "high" });
       F.push({
         id: `F-CMP-${slug(L.id)}-${slug(dp.id)}`,
         detector: "D4 · Comps and voids above control limits",
@@ -344,13 +362,14 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
         equations: ["A5", "E2", "E3"],
         feeds: ["toast_orders"],
         title: `${dp.label} comps are running above this room's own control limits`,
-        plain: `${L.short} ${dp.label.toLowerCase()} is comping ${formatPct(mean(recent.map((p) => p.v)), 1)} of gross against its own baseline of ${formatPct(chart.mu, 1)}.`,
+        plain: `${L.short} ${dp.label.toLowerCase()} is comping ${formatPct(mean(recent.map((p) => p.v)), 1)} of gross against its own baseline of ${formatPct(chart.mu, 1)}. The other rooms did not move over the same services.`,
         onset,
         observed: { metric: "Comps ÷ gross", actual: mean(recent.map((p) => p.v)), baseline: chart.mu, unit: "ratio", periodLabel: "last 28 services" },
         exposureCents: weekly,
         series,
         chartBaselineN: 28,
         evidenceCount: recent.length,
+        cadenceDays: 1,
         causes: [
           { cause: "One manager comping to resolve ticket-time complaints", p: 0.54, sep: "Comps by approving employee against ticket time on the same checks" },
           { cause: "A recurring quality problem on one or two items", p: 0.31, sep: "Comped items by menu item over the same period" },
@@ -448,6 +467,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
           series: wk.map((p) => ({ date: p.date, v: p.units })),
           chartBaselineN: null,
           evidenceCount: wk.length,
+          cadenceDays: 7,
           causes: [
             { cause: "Price has not moved with the recipe cost since the last card revision", p: 0.66, sep: "Price history against recipe-cost effective dates" },
             { cause: "Anchored to a competitor price that has since moved", p: 0.21, sep: "Comparable items at the two nearest comparable rooms" },
@@ -484,6 +504,11 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
       const pre = rows.filter((r) => r.date < recentW);
       const post = rows.filter((r) => r.date >= recentW);
       if (pre.length < 200 || post.length < 200) continue;
+      // The group's own mix move over the same weeks is netted out: a special the whole
+      // group ran is not one room's drift.
+      const peerRows = reg.itemDays.filter((r) => r.loc !== L.id && r.date >= priorW);
+      const peerPre = peerRows.filter((r) => r.date < recentW);
+      const peerPost = peerRows.filter((r) => r.date >= recentW);
       const agg = (rs: typeof rows) => {
         const m = groupBy(rs, (r) => r.item);
         const tot = sum(rs.map((r) => r.units));
@@ -493,6 +518,8 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
       };
       const A = agg(pre);
       const B = agg(post);
+      const AP = peerPre.length ? agg(peerPre) : null;
+      const BP = peerPost.length ? agg(peerPost) : null;
       const drivers: Array<{ item: string; name: string; dShare: number; dCm: number; mixEffect: number; cmEffect: number; crossEffect: number; shareNow: number; sharePre: number }> = [];
       let mixEff = 0;
       let cmEff = 0;
@@ -500,7 +527,8 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
       for (const m of reg.menu) {
         const a = A[m.id] ?? { share: 0, cm: 0, units: 0 };
         const b = B[m.id] ?? { share: 0, cm: 0, units: 0 };
-        const dShare = b.share - a.share;
+        const peerShift = AP && BP ? (BP[m.id]?.share ?? 0) - (AP[m.id]?.share ?? 0) : 0;
+        const dShare = b.share - a.share - peerShift;
         const dCm = b.cm - a.cm;
         const me = dShare * a.cm;
         const ce = b.share * dCm;
@@ -532,13 +560,14 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
         equations: ["B9", "B4", "B2"],
         feeds: ["toast_orders", "recipes"],
         title: "The mix has drifted toward lower-margin plates",
-        plain: `At ${L.short} the mix moved ${formatUsd(-perItem, { dp: 2 })} of contribution per item sold over eight weeks. ${top.name} is most of it.`,
+        plain: `At ${L.short} the mix moved ${formatUsd(-perItem, { dp: 2 })} of contribution per item sold over eight weeks, net of what the other rooms' mix did. ${top.name} is most of it.`,
         onset: null,
         observed: { metric: "Contribution per item sold, mix effect only", actual: top.shareNow, baseline: top.sharePre, unit: "ratio", periodLabel: "8 weeks vs the prior 8" },
         exposureCents: Math.abs(weekly),
         series: [],
         chartBaselineN: null,
         evidenceCount: 8,
+        cadenceDays: 7,
         causes: [
           { cause: `${top.name} lost menu position or server mention`, p: 0.48, sep: "Attachment by server and by section over the same weeks" },
           { cause: "A seasonal special is cannibalising the higher-margin plate", p: 0.33, sep: "Units of the special against the decline, week by week" },
@@ -569,7 +598,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
         if (sv.length < 40) continue;
         const series = sv.map((s) => ({ date: s.date, v: s.ticketMin }));
         const cus = cusumChart(series, { baselineN: 28 });
-        const onset = driftOnset(cus);
+        const onset = driftOnset(cus, { direction: "high" });
         if (!onset || onset.direction !== "high") continue;
         const post = series.filter((p) => p.date >= onset.signalDate);
         const pre = series.filter((p) => p.date < onset.onsetDate);
@@ -613,6 +642,7 @@ export function detectors(reg: Register, feeds: readonly FeedHealth[], asOf: Iso
           series,
           chartBaselineN: 28,
           evidenceCount: post.length,
+          cadenceDays: 1,
           blockedBy,
           causes: [
             { cause: "A station is the constraint — expo or the grill", p: 0.51, sep: "Fire-to-ready by station on the KDS" },

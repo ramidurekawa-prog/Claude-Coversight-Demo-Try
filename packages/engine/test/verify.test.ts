@@ -97,3 +97,22 @@ describe("the mint and the verification decision service", () => {
     expect(g.gates.map((x) => x.id)).toEqual(["EXEC", "OBS", "POWER", "TREND", "SIGN", "COMP", "GR:rating", "DQ", "OVL"]);
   });
 });
+
+describe("\"could not tell\" and \"did not work\" are different facts", () => {
+  it("reports an under-powered positive as directional, never bookable", () => {
+    // Clears zero (lower bound 6,240) but sits below the 15,000 MDE the window was designed to see.
+    const r = verificationService(base({ estimate: est({ point: 12000, se: 3350 }) }), ctx());
+    expect(r.outcome).toBe("directional");
+    expect(r.money).toBeNull();
+    expect(r.why).toMatch(/under-powered/);
+  });
+  it("reports a window that could never have seen the projection as inconclusive, not a null", () => {
+    const r = verificationService(base({ estimate: est({ point: 2000, se: 8000 }), projectedCents: 9000 }), ctx());
+    expect(r.outcome).toBe("inconclusive");
+    expect(r.why).toMatch(/design failure/);
+  });
+  it("reports a powered null as no effect", () => {
+    const r = verificationService(base({ estimate: est({ point: 2000, se: 8000 }), projectedCents: 30000 }), ctx());
+    expect(r.outcome).toBe("no_effect");
+  });
+});

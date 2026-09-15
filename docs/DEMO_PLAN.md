@@ -71,10 +71,10 @@ Synthetic data, labelled as such on every screen. Demo clock stands on **15 Sept
 | 1 | **Home** | One headline: persistent verified savings this period with its interval and the value multiple against the fee; beneath it the loop in priority order: decisions due, executions due, tests running, results landed, wins decaying; data confidence | "This is what we have actually proved, and what needs you this week." |
 | 2 | **Today** | Work queue ranked by consequence of inaction: guardrail breach first, then data-quality failure, overlap conflict, high-value finding awaiting decision, window closing soon | "Fifteen minutes with a phone in one hand." |
 | 3 | **Profit Recovery** | Funnel: detected → qualified → accepted → executed → measured → verified → persistent → reconciled with counts, dollars per class and the drop-off named; the twelve conversion metrics | "Where opportunities go, and why they die." |
-| 4 | **Finding detail** (Oakland Tuesday dinner labour) | Plain sentence, the control chart with the drift onset day, observed vs baseline, the dollar (exposure → recoverable), ranked causes, the recommendation with its drafted artifact, guardrails, the eight confidence dimensions, overlap status | DATA → FINDING → RECOMMENDATION |
+| 4 | **Finding detail** (Oakland dinner comps, live since 10 Aug, 15 days left to decide) | Plain sentence, the control chart with the drift onset day, observed vs baseline, the dollar (exposure → recoverable), ranked causes, the recommendation with its drafted artifact, guardrails, the eight confidence dimensions, overlap status | DATA → FINDING → RECOMMENDATION |
 | 5 | **Accept** | Accept with owner and date → the action and the intervention are created with a frozen measurement plan (primary metric, control set, MDE, guardrails, window) | ACTION |
-| 6 | **Actions** | The action list; mark done with evidence → execution fidelity resolved → window opens | EXECUTION |
-| 7 | **Advance the demo clock** (labelled synthetic control) | The register extends four weeks with the change applied; checkpoints accumulate; the window closes; the verification service decides | MEASUREMENT |
+| 6 | **Actions** | The action list; mark done with evidence → execution fidelity resolved → window opens. Also visible: the Tuesday labour cut at Oakland (IV-07) already executing, result due 6 Oct | EXECUTION |
+| 7 | **Advance the demo clock** (labelled synthetic control) | The register extends to the window close with the change applied; checkpoints accumulate; the window closes; the verification service decides — for IV-07 and for the comps change just made | MEASUREMENT |
 | 8 | **Intervention / measurement detail** | Treatment vs control series, DiD point estimate, standard error, interval, placebo test, MDE, every gate with its verdict, every guardrail, the bookable lower bound, the house sentence | VERIFIED RESULT |
 | 9 | **ROI proof** | Savings ledger: every verified claim with treatment, control, interval, gates, persistence class; realized accrual by day/week/month; reversals shown, never netted; run rate; value multiple; the P&L bridge for one claim; proof packet export | ROI PROOF |
 | 10 | **Data quality** | Feed freshness from delivered data, completeness, dollars at risk apportioned per feed, the one stale feed and what it blocks | "Can I trust these numbers?" |
@@ -103,14 +103,21 @@ persona picker (owner / GM / finance / admin) that changes navigation emphasis b
 
 ## 5. Demo data design (synthetic, deterministic)
 
-Rosewood Group, seed `rosewood-v4`, 15 Sep 2025 → 14 Sep 2026 (52 weeks), two dayparts, 18 menu items,
-12 SKUs, 7 roles. Planted signals: chicken price step (vendor), portion drift at Berkeley, Tuesday
-overstaffing at Oakland, comps excursion at Berkeley lunch (fixed in June) and Oakland dinner (live),
-comps recode at Alameda (the reversal), mix drift at Alameda, ticket creep at Alameda, capacity
-constraint at Oakland Fri/Sat. Ten declared interventions with frozen plans; every outcome is
+Rosewood Group, seed `rosewood-v5` (FIXTURE.version 1.0.0, fingerprint pinned by test), 15 Sep 2025 →
+14 Sep 2026 (52 weeks), two dayparts, 18 menu items, 12 SKUs, 7 roles, ~70k checks / 158k order lines /
+22k shifts / 1.9k invoice lines → 2,186 services. Planted signals: chicken price step (vendor, 6 Jul),
+portion drift at Berkeley (13 Jul, same SKU — the overlap), Tuesday overstaffing at Oakland (22 Jun,
+converted to IV-07 on 1 Sep, executing since 8 Sep), comps excursion at Berkeley lunch (fixed in June)
+and Oakland dinner (live since 10 Aug — the finding the demo accepts), comps recode at Alameda (the
+reversal), mix drift at Alameda, ticket creep at Alameda (blocked by the stale reservations feed),
+capacity constraint at Oakland Fri/Sat. Ten declared interventions with frozen plans; every outcome is
 **computed** by running the register through the estimator and the verification service — none is
-written down. The demo clock can advance; the generator extends the register deterministically and
-applies the effect of executed changes so the loop can close inside the demo.
+written down. Computed at 15 Sep: IV-01 and IV-02 verified and persistent, IV-09 verified with a
+named limitation, IV-03 verified then decaying (upkeep action), IV-04 guardrail failure, IV-08 a
+powered null, IV-05 and IV-06 inconclusive by design failure (MDE above the projection), IV-10
+reversed, IV-07 measuring. Value multiple 3.2× on a prorated fee. The demo clock can advance; the
+generator extends the register deterministically and applies the effect of executed changes so the
+loop can close inside the demo.
 
 Consistency guarantees: every KPI is computed once per (org, scope, asOf) by `engine/ledger` and served
 through the API; the UI renders, it does not compute. Tests assert the same finding shows the same
@@ -133,21 +140,27 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
 | --- | --- | --- | --- |
 | 1 | Audit spec + prototypes, map requirements | done | Repo empty; rules extracted to SPEC_NOTES |
 | 2 | CLAUDE.md, DEMO_PLAN, ARCHITECTURE, TEST_CHECKLIST | done | living docs |
-| 3 | Scaffold monorepo, toolchain green | done | Next 16, TS 5.9, Vitest 4, Playwright 1.56.1 (matches preinstalled Chromium), drizzle + better-sqlite3 |
-| 4 | Engine: money/claims, stats, charts, DiD/reconcile, gates, mint, overlap, state machines, detectors, ledger, confidence, queue | in progress | ported from prototype with tests |
-| 5 | Fixture: Rosewood generator + history + clock extension | pending | |
-| 6 | DB: schema, migrations, org-scoped repos, seed, demo clock, nightly job | pending | |
-| 7 | API: route handlers + contracts + session/tenancy | pending | |
-| 8 | UI: design system, shell, eight surfaces, states | pending | |
+| 3 | Compare, select, port and integrate proven implementation from the reference monorepo | done | `docs/REFERENCE_COMPARISON.md`: Postgres-dialect Drizzle + PGlite, Fastify + better-auth, canonical Toast-shaped rows, design tokens. Toolchain: Next 16, TS 5.9, Vitest 4, Playwright 1.56.1 |
+| 4 | Engine: money/claims, stats, charts + change-point, DiD/reconcile, gates, mint, overlap, state machines, detectors, rollup, pipeline, ledger, confidence, queue | done | 61 tests; purity enforced |
+| 5 | Fixture: Rosewood canonical generator + declared history + build + Harbor House + personas | done | 23 tests; planted signals found; outcomes computed; fingerprint pinned |
+| 6 | DB: schema, migrations, org-scoped repos, seed, demo clock, nightly job | in progress | |
+| 7 | API: Fastify routes + contracts + better-auth + location scope | pending | |
+| 8 | UI: tokens/shell port, eight surfaces, states | pending | |
 | 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | pending | |
 | 10 | Manual walkthrough + fixes + docs refresh | pending | |
+| 11 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
 
 ## 8. Decisions taken without asking (and why)
 
-- **SQLite instead of Postgres** for the demo: zero external services, deterministic reseed in seconds,
-  same drizzle schema can move to Postgres later. Tenancy is enforced in the repository layer either way.
-- **API as Next.js route handlers instead of a separate Fastify service**: one process to run in a demo;
-  contracts are shared Zod schemas so the split can happen later without changing the wire shape.
+- **Postgres dialect with PGlite as the zero-service default** (reversing the first scaffold's SQLite
+  choice after the reference comparison): the reference's proven schema conventions carry over, a
+  real Postgres is one environment variable away, and nothing external is needed for the demo.
+- **Standalone Fastify API** (as the reference's ADR-0001) with the web app proxying `/api/*`: route
+  tests inject against PGlite without HTTP, and the session cookie stays first-party.
+- **Group-level claims apportioned equally across rooms** in per-room views, named in the metric
+  contract, so per-room views add up to the group and no dollar is counted twice.
+- **Decision window of 45 days opens at qualification**, not at the chart's first signal, so a slow
+  weekly-evidence finding is not expired before it could have been decided.
 - **"Nightly job" runs synchronously when the demo clock advances** instead of a scheduler: the demo
   needs the loop to close in minutes, and it keeps the engine's `asOf` discipline explicit.
 - **Product name**: UI says "Streamline" with "by Coversight"; packages are `@streamline/*`.

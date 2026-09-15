@@ -23,3 +23,5 @@ export * from "./confidence.js";
 export * from "./copy.js";
 export * from "./ledger.js";
 export * from "./queue.js";
+export * from "./rollup.js";
+export * from "./pipeline.js";

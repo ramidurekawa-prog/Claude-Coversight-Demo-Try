@@ -6,7 +6,7 @@
  *
  * Computed once per (scope, asOf). Every surface reads this; none recomputes.
  */
-import { daysBetween, formatDateYear, type IsoDate, monthOf, weekOf } from "./dates.js";
+import { daysBetween, daysInMonth, formatDateYear, type IsoDate, monthOf, weekOf } from "./dates.js";
 import type { FindingCore, Qualification } from "./detectors.js";
 import { accrualSeries, type InterventionEval } from "./interventions.js";
 import { type DatedValue } from "./measure.js";
@@ -14,7 +14,7 @@ import { type ClaimClass, Money, type Cents } from "./money.js";
 import type { FeedHealth, Location } from "./register.js";
 import { assertMetricContract, CALC_VERSION, type MetricContract, type ReconStatus, RECON_STATUS } from "./registry.js";
 import { FINDING_STATES, type FindingState } from "./states.js";
-import { mean, median } from "./stats.js";
+import { apportion, mean, median } from "./stats.js";
 
 export interface LedgerFinding extends FindingCore {
   state: FindingState;
@@ -22,6 +22,8 @@ export interface LedgerFinding extends FindingCore {
   recoverableCents: Cents;
   qualification: Qualification;
   detectedOn: IsoDate;
+  /** The day the decision window opened — the finding had qualified. */
+  decisionOpenedOn: IsoDate;
   expiresOn: IsoDate;
   historical?: boolean;
   convertedTo?: string | null;
@@ -117,14 +119,39 @@ export interface Kpi {
   contract: MetricContract;
 }
 
-const sumBy = <T>(arr: readonly T[], fn: (x: T) => number) => arr.reduce((a, x) => a + fn(x), 0);
-
 export function scopeLocs(input: Pick<LedgerInput, "locations" | "scope">): string[] {
   return input.scope === "all" ? input.locations.map((l) => l.id) : [input.scope];
 }
 export function inScope(x: { locs?: string[]; loc?: string }, locs: readonly string[]): boolean {
   const ls = x.locs ?? (x.loc ? [x.loc] : []);
   return ls.some((l) => locs.includes(l)) || x.loc === "group";
+}
+
+/**
+ * The fraction of a claim that belongs to the scope. A group-level claim is
+ * apportioned EQUALLY across the rooms it covers, so the per-room views add up
+ * to the group view and no dollar appears in more than one room (counting
+ * rule: once, never in each). Scope "all" always returns 1.
+ */
+export function shareOf(x: { locs?: string[]; loc?: string }, locs: readonly string[], allLocs: readonly string[]): number {
+  const ls = x.locs && x.locs.length ? x.locs : x.loc === "group" ? allLocs : x.loc ? [x.loc] : [];
+  if (!ls.length) return 0;
+  const inside = ls.filter((l) => locs.includes(l)).length;
+  return inside / ls.length;
+}
+
+/** The integer cents of one claim that belong to the scope — largest-remainder apportionment, so the rooms add up to the group exactly. */
+export function centsInScope(x: { locs?: string[]; loc?: string }, cents: number, locs: readonly string[], allLocs: readonly string[]): number {
+  const ls = x.locs && x.locs.length ? x.locs : x.loc === "group" ? allLocs : x.loc ? [x.loc] : [];
+  if (!ls.length) return 0;
+  const sign = cents < 0 ? -1 : 1;
+  const parts = apportion(Math.abs(Math.round(cents)), ls.map(() => 1));
+  return sign * ls.reduce((a, l, i) => a + (locs.includes(l) ? (parts[i] as number) : 0), 0);
+}
+
+/** Sum a cents figure over claims, apportioned to the scope. */
+function sumScoped<T extends { locs?: string[]; loc?: string }>(arr: readonly T[], fn: (x: T) => number, locs: readonly string[], allLocs: readonly string[]): number {
+  return arr.reduce((a, x) => a + centsInScope(x, fn(x), locs, allLocs), 0);
 }
 
 /** Money in the period: the daily accrual restricted to the period. */
@@ -152,6 +179,8 @@ function contractFor(input: LedgerInput, id: string, definition: string, klass: 
 
 export function kpis(input: LedgerInput): Kpi[] {
   const locs = scopeLocs(input);
+  const all = input.locations.map((l) => l.id);
+  const S = <T extends { locs?: string[]; loc?: string }>(arr: readonly T[], fn: (x: T) => number) => sumScoped(arr, fn, locs, all);
   const fs = input.findings.filter((f) => inScope(f, locs));
   const open = fs.filter((f) => !FINDING_STATES[f.state].terminal && f.state !== "converted");
   const qualified = fs.filter((f) => ["awaiting_decision", "accepted", "converted"].includes(f.state) && !f.historical);
@@ -160,23 +189,25 @@ export function kpis(input: LedgerInput): Kpi[] {
   const persistent = verified.filter((iv) => iv.persistence && iv.persistence.status !== "decaying");
   const inFlight = ivs.filter((iv) => iv.state === "measuring" || iv.state === "measurement_pending" || iv.state === "executed");
   const approvedNotStarted = ivs.filter((iv) => ["approved", "scheduled", "in_progress", "evidence_pending"].includes(iv.state));
-  const feePeriod = Math.round(input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1)));
+  // Fees for the SAME period: the monthly fee prorated to the days of the period, per room when scoped.
+  const periodDays = daysBetween(input.period.from, input.period.to) + 1;
+  const feePeriod = Math.round((input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1)) * periodDays) / daysInMonth(monthOf(input.period.from)));
 
-  const exposure = sumBy(open, (f) => f.exposureCents);
-  const recoverable = sumBy(qualified, (f) => f.recoverableCents);
-  const approvedValue = sumBy(approvedNotStarted, (iv) => iv.projectedCents);
-  const activeValue = sumBy(inFlight, (iv) => iv.projectedCents);
-  const measured = sumBy(ivs.filter((iv) => iv.estimate && iv.windowClosed), (iv) => Math.max(0, Math.round(iv.estimate?.point ?? 0)));
-  const verifiedWeekly = sumBy(verified, (iv) => iv.result.money?.cents ?? 0);
-  const persistentInPeriod = sumBy(persistent, (iv) => accrualInPeriod(iv, input.period, input.asOf));
-  const realized = sumBy(verified, (iv) => iv.realizedCents);
-  const adjustmentsInScope = input.adjustments.filter((a) => a.status !== "open" && (input.scope === "all" || a.loc === input.scope || a.loc === "group"));
-  const adjustments = -sumBy(adjustmentsInScope, (a) => a.cents);
-  const runRate = sumBy(persistent, (iv) => iv.annualRunRateCents);
+  const exposure = S(open, (f) => f.exposureCents);
+  const recoverable = S(qualified, (f) => f.recoverableCents);
+  const approvedValue = S(approvedNotStarted, (iv) => iv.projectedCents);
+  const activeValue = S(inFlight, (iv) => iv.projectedCents);
+  const measured = S(ivs.filter((iv) => iv.estimate && iv.windowClosed), (iv) => Math.max(0, Math.round(iv.estimate?.point ?? 0)));
+  const verifiedWeekly = S(verified, (iv) => iv.result.money?.cents ?? 0);
+  const persistentInPeriod = S(persistent, (iv) => accrualInPeriod(iv, input.period, input.asOf));
+  const realized = S(verified, (iv) => iv.realizedCents);
+  const adjustmentsInScope = input.adjustments.filter((a) => a.status !== "open");
+  const adjustments = -S(adjustmentsInScope, (a) => a.cents);
+  const runRate = S(persistent, (iv) => iv.annualRunRateCents);
   const multiple = feePeriod ? persistentInPeriod / feePeriod : 0;
   const dq = mean(input.feeds.filter((f) => f.tier === "Pilot").map((f) => f.completeness));
   const reconciled = verified.filter((iv) => input.ledgerSides?.[iv.id]?.status === "reconciled");
-  const reconciledCents = sumBy(reconciled, (iv) => input.ledgerSides?.[iv.id]?.observedCents ?? 0);
+  const reconciledCents = S(reconciled, (iv) => input.ledgerSides?.[iv.id]?.observedCents ?? 0);
 
   const K = (id: string, label: string, value: Money | number, klass: Kpi["klass"], definition: string, drillTo: string, read: string, extra: Partial<Kpi> = {}): Kpi => ({
     id,
@@ -205,7 +236,7 @@ export function kpis(input: LedgerInput): Kpi[] {
     K("recoverable", "Qualified recoverable opportunity", new Money(recoverable, "recoverable"), "Estimated", "Exposure that passed data, feasibility and overlap tests, deduplicated.", "qualification queue", "The honest top of the funnel. The number a pipeline conversation should use."),
     K("exposure", "Total profit exposure", new Money(exposure, "profit_exposure"), "Estimated", "Sum of open, non-duplicated exposure estimates.", "exposure by domain", "Rises when detection improves. A falling number is not necessarily good news.", { neverTotal: true }),
     K("openf", "Open findings", open.length, "—", "Count by state and age.", "findings list", "Ageing matters more than volume.", { isCount: true }),
-    K("overdue", "Overdue actions", input.actions.filter((a) => a.state === "open" && a.dueOn < input.asOf && (input.scope === "all" || a.loc === input.scope || a.loc === "group")).length, "—", "Count of actions past their due date by owner.", "action list", "The earliest leading indicator of churn.", { isCount: true }),
+    K("overdue", "Overdue actions", input.actions.filter((a) => a.state === "open" && a.dueOn < input.asOf && inScope(a, locs)).length, "—", "Count of actions past their due date by owner.", "action list", "The earliest leading indicator of churn.", { isCount: true }),
     K("dq", "Data confidence", dq, "—", "Composite of source freshness, completeness and mapping health.", "data-quality register", "When this falls, every number above it inherits the fall.", { isPct: true }),
   ];
 }
@@ -220,6 +251,8 @@ export interface FunnelStage {
 
 export function funnel(input: LedgerInput): FunnelStage[] {
   const locs = scopeLocs(input);
+  const all = input.locations.map((l) => l.id);
+  const S = <T extends { locs?: string[]; loc?: string }>(arr: readonly T[], fn: (x: T) => number) => sumScoped(arr, fn, locs, all);
   const fs = input.findings.filter((f) => inScope(f, locs));
   const ivs = input.interventions.filter((iv) => inScope(iv, locs));
   const detected = fs;
@@ -233,14 +266,14 @@ export function funnel(input: LedgerInput): FunnelStage[] {
   const reconciled = verified.filter((iv) => input.ledgerSides?.[iv.id]?.status === "reconciled");
   const byOutcome = (o: string) => ivs.filter((iv) => iv.result.outcome === o).length;
   return [
-    { stage: "Detected", n: detected.length, cents: sumBy(detected, (f) => f.exposureCents), klass: "profit_exposure", lost: null },
-    { stage: "Qualified", n: qualified.length, cents: sumBy(qualified, (f) => f.recoverableCents), klass: "recoverable", lost: `${detected.length - qualified.length} lost — data insufficient or below the recoverability floor` },
-    { stage: "Accepted", n: accepted.length, cents: sumBy(accepted, (f) => f.recoverableCents), klass: "recoverable", lost: `${qualified.length - accepted.length} awaiting a decision or rejected by the operator` },
-    { stage: "Executed", n: executed.length, cents: sumBy(executed, (iv) => iv.projectedCents), klass: "committed", lost: `${accepted.length - executed.length} accepted but not yet executed` },
-    { stage: "Measured", n: measured.length, cents: sumBy(measured, (iv) => Math.max(0, Math.round(iv.estimate?.point ?? 0))), klass: "measured", lost: `${executed.length - measured.length} still inside the window` },
-    { stage: "Verified", n: verified.length, cents: sumBy(verified, (iv) => iv.result.money?.cents ?? iv.reversedClaimCents ?? 0), klass: "verified", lost: `${measured.length - verified.length} did not clear the gates — ${byOutcome("guardrail_failure")} guardrail failure, ${byOutcome("no_effect")} no measurable effect, ${byOutcome("inconclusive")} inconclusive` },
-    { stage: "Persistent", n: persistent.length, cents: sumBy(persistent, (iv) => iv.result.money?.cents ?? 0), klass: "bookable", lost: `${verified.length - persistent.length} below the persistence threshold or reversed` },
-    { stage: "Reconciled", n: reconciled.length, cents: sumBy(reconciled, (iv) => input.ledgerSides?.[iv.id]?.observedCents ?? 0), klass: "bookable", lost: `${verified.length - reconciled.length} partially reconciled, awaiting the close, or withdrawn` },
+    { stage: "Detected", n: detected.length, cents: S(detected, (f) => f.exposureCents), klass: "profit_exposure", lost: null },
+    { stage: "Qualified", n: qualified.length, cents: S(qualified, (f) => f.recoverableCents), klass: "recoverable", lost: `${detected.length - qualified.length} lost — data insufficient or below the recoverability floor` },
+    { stage: "Accepted", n: accepted.length, cents: S(accepted, (f) => f.recoverableCents), klass: "recoverable", lost: `${qualified.length - accepted.length} awaiting a decision or rejected by the operator` },
+    { stage: "Executed", n: executed.length, cents: S(executed, (iv) => iv.projectedCents), klass: "committed", lost: `${accepted.length - executed.length} accepted but not yet executed` },
+    { stage: "Measured", n: measured.length, cents: S(measured, (iv) => Math.max(0, Math.round(iv.estimate?.point ?? 0))), klass: "measured", lost: `${executed.length - measured.length} still inside the window` },
+    { stage: "Verified", n: verified.length, cents: S(verified, (iv) => iv.result.money?.cents ?? iv.reversedClaimCents ?? 0), klass: "verified", lost: `${measured.length - verified.length} did not clear the gates — ${byOutcome("guardrail_failure")} guardrail failure, ${byOutcome("no_effect")} no measurable effect, ${byOutcome("inconclusive")} inconclusive` },
+    { stage: "Persistent", n: persistent.length, cents: S(persistent, (iv) => iv.result.money?.cents ?? 0), klass: "bookable", lost: `${verified.length - persistent.length} below the persistence threshold or reversed` },
+    { stage: "Reconciled", n: reconciled.length, cents: S(reconciled, (iv) => input.ledgerSides?.[iv.id]?.observedCents ?? 0), klass: "bookable", lost: `${verified.length - reconciled.length} partially reconciled, awaiting the close, or withdrawn` },
   ];
 }
 
@@ -282,8 +315,9 @@ export function conversions(input: LedgerInput): ConversionMetric[] {
   const measured = ivs.filter((iv) => iv.windowClosed && iv.estimate);
   const verified = ivs.filter((iv) => iv.result.money || iv.reversedClaimCents != null);
   const persistent = verified.filter((iv) => iv.persistence && iv.persistence.status !== "decaying");
-  const fee = input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1));
-  const persistentInPeriod = sumBy(persistent, (iv) => accrualInPeriod(iv, input.period, input.asOf));
+  const periodDays = daysBetween(input.period.from, input.period.to) + 1;
+  const fee = (input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1)) * periodDays) / daysInMonth(monthOf(input.period.from));
+  const persistentInPeriod = sumScoped(persistent, (iv) => accrualInPeriod(iv, input.period, input.asOf), locs, input.locations.map((l) => l.id));
   const firstActionDays = ivs.map((iv) => {
     const f = fs.find((x) => x.id === iv.findingId);
     return f ? daysBetween(f.detectedOn, iv.decidedOn) : null;
@@ -329,9 +363,13 @@ export interface Accrual {
 
 export function accrual(input: LedgerInput): Accrual {
   const locs = scopeLocs(input);
+  const all = input.locations.map((l) => l.id);
   const ivs = input.interventions.filter((iv) => inScope(iv, locs) && iv.result.money);
   const daily = new Map<IsoDate, number>();
-  for (const iv of ivs) for (const p of accrualSeries(iv, input.asOf)) daily.set(p.date, (daily.get(p.date) ?? 0) + p.y);
+  for (const iv of ivs) {
+    const share = shareOf(iv, locs, all);
+    for (const p of accrualSeries(iv, input.asOf)) daily.set(p.date, (daily.get(p.date) ?? 0) + p.y * share);
+  }
   const days = [...daily.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([date, y]) => ({ date, y }));
   const byWeekMap = new Map<IsoDate, number>();
   const byMonthMap = new Map<string, number>();
@@ -339,13 +377,13 @@ export function accrual(input: LedgerInput): Accrual {
     byWeekMap.set(weekOf(p.date), (byWeekMap.get(weekOf(p.date)) ?? 0) + p.y);
     byMonthMap.set(monthOf(p.date), (byMonthMap.get(monthOf(p.date)) ?? 0) + p.y);
   }
-  const adjInScope = input.adjustments.filter((a) => a.status !== "open" && (input.scope === "all" || a.loc === input.scope || a.loc === "group"));
+  const adjInScope = input.adjustments.filter((a) => a.status !== "open");
   const months = [...byMonthMap.keys()].sort();
   const byMonth = months.map((month) => ({
     month,
     cents: Math.round(byMonthMap.get(month) ?? 0),
-    adjustmentsCents: Math.round(sumBy(adjInScope.filter((a) => monthOf(a.on) === month), (a) => a.cents)),
-    feeCents: Math.round(input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1))),
+    adjustmentsCents: sumScoped(adjInScope.filter((a) => monthOf(a.on) === month), (a) => a.cents, locs, all),
+    feeCents: Math.round(input.feeMonthlyCents * (input.scope === "all" ? 1 : 1 / Math.max(input.locations.length, 1)) * (month === monthOf(input.asOf) ? (Number(input.asOf.slice(8, 10))) / daysInMonth(month) : 1)),
   }));
   let run = 0;
   const cumulative = days.map((p) => ({ date: p.date, y: (run += p.y) }));
@@ -374,6 +412,7 @@ export interface FeedRisk {
 
 export function feedRisk(input: LedgerInput): FeedRisk[] {
   const locs = scopeLocs(input);
+  const all = input.locations.map((l) => l.id);
   const fs = input.findings.filter((f) => inScope(f, locs) && !f.historical);
   const ivs = input.interventions.filter((iv) => inScope(iv, locs));
   return input.feeds.map((feed) => {
@@ -381,8 +420,9 @@ export function feedRisk(input: LedgerInput): FeedRisk[] {
     let blocked = 0;
     for (const f of fs) {
       if (!f.feeds.includes(feed.id)) continue;
-      const share = f.recoverableCents / Math.max(f.feeds.length, 1); // apportioned, never repeated
-      if (f.state === "data_insufficient") blocked += f.exposureCents / Math.max(f.feeds.length, 1);
+      const sc = shareOf(f, locs, all);
+      const share = (f.recoverableCents * sc) / Math.max(f.feeds.length, 1); // apportioned, never repeated
+      if (f.state === "data_insufficient") blocked += (f.exposureCents * sc) / Math.max(f.feeds.length, 1);
       else if (!FINDING_STATES[f.state].terminal && f.state !== "converted") openExposure += share;
     }
     let monitoring = 0;
@@ -390,8 +430,9 @@ export function feedRisk(input: LedgerInput): FeedRisk[] {
     for (const iv of ivs) {
       const used = ["toast_orders", "toast_labour"].concat(iv.lever === "menu_price" || iv.lever === "portion" ? ["recipes"] : []).concat(iv.lever === "ticket_time" ? ["kds"] : []);
       if (!used.includes(feed.id)) continue;
-      if (iv.state === "measuring") monitoring += iv.projectedCents / used.length;
-      if (iv.result.money) verifiedAtRisk += iv.result.money.cents / used.length;
+      const sc = shareOf(iv, locs, all);
+      if (iv.state === "measuring") monitoring += (iv.projectedCents * sc) / used.length;
+      if (iv.result.money) verifiedAtRisk += (iv.result.money.cents * sc) / used.length;
     }
     return { feedId: feed.id, openExposureCents: Math.round(openExposure), monitoringCents: Math.round(monitoring), verifiedAtRiskCents: Math.round(verifiedAtRisk), blockedCents: Math.round(blocked) };
   });

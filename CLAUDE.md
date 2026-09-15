@@ -21,18 +21,22 @@ pnpm check              # typecheck + lint + unit tests + build (what CI runs)
 pnpm db:reset           # delete and re-seed the demo database
 ```
 
-Node ≥ 22.13, pnpm 10. No external services: the database is a SQLite file, Chromium for e2e is
-preinstalled in this environment (`@playwright/test` is pinned to 1.56.1 to match it).
+Node ≥ 22.13, pnpm 10. No external services: the database is PGlite (in-process Postgres, files under
+`packages/db/data/pglite`); set `DATABASE_URL` to use a real Postgres (`docker-compose.yml`). Chromium for
+e2e is preinstalled in this environment (`@playwright/test` is pinned to 1.56.1 to match it).
+`pnpm dev` starts the Fastify API on :3001 and Next.js on :3000.
 
-## Workspaces (dependency direction is strict: engine ← fixture ← db ← web)
+## Workspaces (dependency direction is strict: engine ← fixture ← db ← api; contracts/ui ← web)
 
 | Package | Owns | Rules |
 | --- | --- | --- |
 | `packages/engine` | All the maths: money classes, statistics, control charts, DiD/reconciliation estimators, gates, the mint, overlap engine, finding/intervention state machines, detectors, ledger, confidence, queue policy | **Pure.** No clock, no randomness, no I/O, no imports of db/fixture/next/react. Enforced by ESLint and `test/purity-guard.test.ts`. `asOf` is always an argument. |
-| `packages/fixture` | The Rosewood Group synthetic register generator (seeded, deterministic) and the declared intervention history | The only place randomness exists, and it is seeded. Signals are *planted in the data*; detectors must find them. |
-| `packages/contracts` | Zod schemas for every API response | The web app never types an API response by hand. |
-| `packages/db` | SQLite (better-sqlite3 + drizzle) schema, migrations, org-scoped repositories, seed, the demo clock and the "nightly" job | Every repository method takes `orgId` first. A query without a tenant predicate is a bug. Financial rows (verifications, adjustments, audit) are append-only. |
-| `apps/web` | Next.js App Router UI + API route handlers under `app/api/v1/*` | Nothing in the web layer computes a dollar. Every figure arrives from the engine carrying its claim class. |
+| `packages/fixture` | The Rosewood Group synthetic canonical register (seeded, deterministic), the declared intervention history, `buildRosewood()`, the Harbor House second tenant, demo personas | The only place randomness exists, and it is seeded. Signals are *planted in the data*; detectors must find them. Changing the generator changes the pinned fingerprint: bump `FIXTURE.version` in the same commit. |
+| `packages/contracts` | Zod schemas for every API response + thin parsing client | The web app never types an API response by hand. |
+| `packages/ui` | Design tokens and primitives (ported from the reference) | No data fetching, no money arithmetic. |
+| `packages/db` | Postgres-dialect Drizzle schema, migrations, org-scoped repositories, seed, PGlite/pg connection | Every repository method takes `orgId` first. A query without a tenant predicate is a bug. Financial rows (verification results, adjustments, audit) are append-only. |
+| `apps/api` | Fastify 5 + better-auth; routes under `/api/v1/*`; the demo clock and the "nightly" job | Threads the org's `as_of` into every engine call. Validates every response against `contracts`. |
+| `apps/web` | Next.js 16 App Router UI; proxies `/api/*` to `apps/api` | Nothing in the web layer computes a dollar. Every figure arrives from the engine carrying its claim class. Never imports `db` or `fixture`. |
 | `e2e` | Playwright demo-flow tests (desktop + mobile) | The demo script in `docs/DEMO_PLAN.md` is executable here. |
 
 ## Non-negotiable rules (from the specification)
