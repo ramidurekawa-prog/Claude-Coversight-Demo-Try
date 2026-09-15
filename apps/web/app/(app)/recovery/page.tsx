@@ -72,8 +72,8 @@ export default async function RecoveryPage({ searchParams }: { searchParams: Pro
               {formatUsd(recMoney.cents)}
               <span className="unit">a week, if every open finding worked</span>
             </div>
-            <div className="hero-tail">The honest top of the funnel.</div>
-            <p className="hero-sub">{rec.read} {rec.definition} It is an estimate: the lever&apos;s recovery factor has been applied and every overlap deducted, and it is not a saving until a window closes and the gates pass.</p>
+            <div className="hero-tail">What is on the table before anything is executed.</div>
+            <p className="hero-sub">{rec.read} {rec.definition} The lever&apos;s recovery factor has been applied and every overlap deducted; nothing here is a saving until a window closes and the gates pass.</p>
             <div className="hero-formal">
               <Pill tone={toneOfClass(recMoney.klass)}>{classLabel(recMoney.klass)}</Pill>
               <span className="term" title={rec.definition}>
@@ -105,14 +105,20 @@ export default async function RecoveryPage({ searchParams }: { searchParams: Pro
       <Section title="The funnel — detected → qualified → accepted → executed → measured → verified → persistent → reconciled" sub="Counts and dollars per stage, each in its own class, with the drop-off named. A bar's length compares dollars inside one class only.">
         <Card>
           <CardBody>
-            {nothingYet ? <div className="note">Nothing has entered the funnel. Findings appear at the top as the detectors fire.</div> : <FunnelBars stages={r.funnel} />}
+            {nothingYet ? (
+              <div className="note">Nothing has entered the funnel. Findings appear at the top as the detectors fire.</div>
+            ) : (
+              <div className="rc-funnel">
+                <FunnelBars stages={r.funnel} />
+              </div>
+            )}
           </CardBody>
         </Card>
       </Section>
 
       <Section title="Twelve conversion metrics" sub="Where opportunities die, measured as rates and delays. A blank is a metric with too little history to compute, not a zero.">
         <Card>
-          <div className="tw">
+          <div className="tw rc-conv">
             <table className="t">
               <thead>
                 <tr>

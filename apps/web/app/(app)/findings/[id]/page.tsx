@@ -169,7 +169,7 @@ export default async function FindingDetailPage({ params, searchParams }: { para
       <Fold title="The cause — ranked, with what would separate them" sub="Weights are a diagnostic ranking, not probabilities.">
         <Card>
           {f.causes.length ? (
-            <div className="tw">
+            <div className="tw fd-causes">
               <table className="t">
                 <thead>
                   <tr>

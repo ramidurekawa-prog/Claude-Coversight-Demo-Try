@@ -73,7 +73,7 @@ function FeedCard({ f, risk }: { f: FeedHealth; risk: FeedRisk | undefined }) {
             { k: "Feeds stages", v: f.stages },
           ]}
         />
-        <details className="dq-blocks">
+        <details className="dq-blocks" open={f.stale || undefined}>
           <summary>What this blocks</summary>
           <div className="dq-blocks-body">
             <p className="small">{f.degraded}</p>
