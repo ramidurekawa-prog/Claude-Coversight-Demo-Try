@@ -1,0 +1,18 @@
+import { connectDatabase, seedDemo } from "@streamline/db";
+import { buildApp } from "./app.js";
+
+const conn = await connectDatabase();
+const seeded = await seedDemo(conn.db);
+const app = buildApp({
+  logger: true,
+  db: conn.db,
+  dbPing: conn.ping,
+  authConfig: {
+    secret: process.env.BETTER_AUTH_SECRET ?? "insecure-dev-only-secret-change-me",
+    baseURL: process.env.API_BASE_URL ?? "http://localhost:3001",
+    appBaseUrl: process.env.APP_BASE_URL ?? "http://localhost:3000",
+  },
+});
+app.log.info({ db: conn.kind, seeded }, "database ready");
+const port = Number(process.env.PORT ?? 3001);
+await app.listen({ port, host: "0.0.0.0" });
