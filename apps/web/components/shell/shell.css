@@ -31,9 +31,10 @@
 .navitem .ico { color: var(--fg-3); display: inline-flex; }
 .navitem.active .ico { color: var(--accent); }
 .navitem .count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; background: var(--surface-sunken); color: var(--fg-3); border-radius: 99px; padding: 1px 7px; }
+.nav-scrim { display: none; }
 .sidebar .foot { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
 .userchip { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--radius-md); color: inherit; text-decoration: none; }
-.userchip .who { min-width: 0; line-height: 1.2; }
+.userchip .who { min-width: 0; line-height: 1.2; display: flex; flex-direction: column; }
 .userchip .who .name { font-weight: 600; font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .userchip .who .role { font-size: var(--text-xs); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .avatar { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--teal-200); color: var(--teal-800); display: grid; place-items: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
@@ -44,7 +45,7 @@
 .topbar { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: center; gap: 12px; margin: 6px 6px 0 0; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); background: var(--surface); padding: 12px 20px; flex-shrink: 0; min-height: 64px; }
 .topbar h1 { font-size: var(--text-h2); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .topbar .sub { color: var(--fg-3); font-size: var(--text-sm); }
-.topbar .burger { display: none; }
+.burger { display: none; }
 .iconbtn { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-md); border: 1px solid transparent; background: none; color: var(--fg-2); cursor: pointer; }
 .iconbtn:hover { background: var(--surface-hover); color: var(--fg-1); }
 .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
@@ -57,7 +58,7 @@
 
 /* ---- Environment bar: synthetic data is labelled on every screen ---- */
 .envbar { margin: 6px 6px 0 0; padding: 6px 16px; border: 1px solid var(--warning-100); background: var(--warning-50); color: var(--warning-700); border-radius: var(--radius-md); font-size: var(--text-xs); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.envbar .dot { width: 7px; height: 7px; border-radius: 99px; background: var(--warning-500); flex-shrink: 0; }
+.envbar .dot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--warning-500); flex-shrink: 0; margin-right: 6px; vertical-align: middle; }
 .envbar button { background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 
 /* ---- Drawer (record-level interactions never navigate away) ---- */
@@ -75,10 +76,13 @@ body.locked { overflow: hidden; }
   .app { grid-template-columns: 1fr; }
   .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: var(--z-drawer); transform: translateX(calc(-100% - 12px)); transition: transform 220ms var(--ease-out); width: 260px; margin: 0; border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
   body.nav-open .sidebar { transform: translateX(0); }
-  .nav-scrim { display: none; }
   body.nav-open .nav-scrim { display: block; position: fixed; inset: 0; background: var(--overlay); z-index: calc(var(--z-drawer) - 1); }
-  .topbar { margin: 6px; padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
-  .topbar .burger { display: grid; }
+  .topbar { margin: 6px; padding: 10px 12px; gap: 8px; flex-wrap: wrap; min-height: 0; }
+  .topbar .spacer { display: none; }
+  .seg { overflow-x: auto; max-width: 100%; }
+  .seg a, .seg button { height: 30px; padding: 0 9px; }
+  .clockchip { height: 30px; }
+  .burger { display: grid; }
   .topbar h1 { font-size: var(--text-h3); }
   .topbar .sub { display: none; }
   .envbar { margin: 6px; }

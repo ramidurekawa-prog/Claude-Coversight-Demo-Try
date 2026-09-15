@@ -47,7 +47,7 @@ export function LoginForm() {
         {PERSONAS.map((p) => (
           <label key={p.email} className={`choice ${email === p.email ? "on" : ""}`}>
             <input type="radio" name="persona" value={p.email} checked={email === p.email} onChange={() => setEmail(p.email)} />
-            <span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <span className="choice-title">
                 {p.name} <span className="muted">· {p.title}</span>
               </span>

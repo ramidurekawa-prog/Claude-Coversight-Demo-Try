@@ -121,7 +121,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <span className="unit">still reaching the margin this period</span>
             </div>
             <div className="hero-tail">
-              {(multiple.value as number).toFixed(2)}× what you pay us, on a fee prorated to the same {home.period.label.toLowerCase()}.
+              {(multiple.value as number).toFixed(2)}× what you pay us, on a fee prorated to the same period.
             </div>
             <p className="hero-sub">{persistent.read} Counts verified claims that passed their most recent persistence check, accrued over the days of this period they held. Work in flight is never counted; a reversal sits beside it, never inside it.</p>
             <div className="hero-formal">

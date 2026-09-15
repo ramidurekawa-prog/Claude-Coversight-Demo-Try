@@ -10,8 +10,8 @@ export function EnvBar({ me }: { me: MeResponse }) {
   if (!me.org.synthetic) return null;
   return (
     <div className="envbar" role="note">
-      <span className="dot" aria-hidden="true" />
       <span>
+        <span className="dot" aria-hidden="true" />
         <strong>Synthetic data.</strong> {me.org.fixtureLabel ?? "Sample restaurant group · deterministic demo data"}
         {me.org.fixtureVersion ? ` · fixture v${me.org.fixtureVersion}` : ""}
       </span>
