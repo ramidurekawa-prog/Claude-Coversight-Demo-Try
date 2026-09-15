@@ -1,8 +1,9 @@
 import { connectDatabase, seedDemo } from "@streamline/db";
-import { buildApp } from "./app.js";
+import { buildApp } from "./app";
 
 const conn = await connectDatabase();
-const seeded = await seedDemo(conn.db);
+// STREAMLINE_RESET_ON_START=1 re-seeds every org from the fixture (e2e runs and demo rehearsals).
+const seeded = await seedDemo(conn.db, { force: process.env.STREAMLINE_RESET_ON_START === "1" });
 const app = buildApp({
   logger: true,
   db: conn.db,

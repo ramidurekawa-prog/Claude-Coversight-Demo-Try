@@ -7,7 +7,7 @@ import { createRepositories, feedHealthOf, locationFromRow, type StreamlineDb } 
 import type { Adjustment, FeedHealth, InterventionEval, LedgerAction, LedgerFinding, LedgerInput, LedgerSide, Location, Period } from "@streamline/engine";
 import { closedPeriodFor, periodFor } from "@streamline/fixture";
 import type { Org } from "@streamline/db";
-import type { AuthContext } from "./auth/require-auth.js";
+import type { AuthContext } from "./auth/require-auth";
 
 export interface OrgContext {
   org: Org;

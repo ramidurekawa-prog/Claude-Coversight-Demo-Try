@@ -3,10 +3,10 @@
  * same window as the primary effect. A breach requires the optimistic end of
  * the interval to be past the limit; a missing guardrail is a failure, not a pass.
  */
-import type { IsoDate } from "./dates.js";
-import { did, reconcileA, svSeries, toWeekly, type Estimate, type ServiceScope } from "./measure.js";
-import { formatPct, formatUsd } from "./money.js";
-import type { Register, Service } from "./register.js";
+import type { IsoDate } from "./dates";
+import { did, reconcileA, svSeries, toWeekly, type Estimate, type ServiceScope } from "./measure";
+import { formatPct, formatUsd } from "./money";
+import type { Register, Service } from "./register";
 
 export interface GuardrailDef {
   label: string;

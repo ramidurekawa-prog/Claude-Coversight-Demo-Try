@@ -22,7 +22,7 @@ import {
   PersistenceStatus,
   ReconStatus,
   VerificationOutcome,
-} from "./primitives.js";
+} from "./primitives";
 
 /* ---------- charts.ts ----------------------------------------------------- */
 

@@ -1,13 +1,13 @@
 import { buildRosewood, HARBOR_ORG_ID, PERSONAS, registerFingerprint, ROSEWOOD_ORG_ID } from "@streamline/fixture";
 import { describe, expect, it } from "vitest";
-import { createIdentityRepositories } from "../src/identity.js";
-import { runNightly } from "../src/nightly.js";
-import { verifyPassword } from "../src/password.js";
-import { loadRegister } from "../src/register.js";
-import { createRepositories } from "../src/repositories.js";
-import { accounts, users } from "../src/schema.js";
-import { seedDemo } from "../src/seed.js";
-import { freshDb } from "../src/test-helpers.js";
+import { createIdentityRepositories } from "../src/identity";
+import { runNightly } from "../src/nightly";
+import { verifyPassword } from "../src/password";
+import { loadRegister } from "../src/register";
+import { createRepositories } from "../src/repositories";
+import { accounts, users } from "../src/schema";
+import { seedDemo } from "../src/seed";
+import { freshDb } from "../src/test-helpers";
 
 describe("seed", () => {
   it("persists the fixture build, is idempotent, and keeps tenants apart", async () => {

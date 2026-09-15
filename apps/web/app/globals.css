@@ -1,1 +1,634 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* packages/ui sits behind a node_modules symlink — outside Tailwind's
+   auto-detection, so its class strings must be scanned explicitly. */
+@source '../../../packages/ui/src';
+
+/* v3's darkMode: ['class', '[data-theme="dark"]'] */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ============================================================================
+   STREAMLINE (by Coversight) — design tokens, ported from the reference monorepo
+   ----------------------------------------------------------------------------
+   1:1 port of init-resources/skc-design-system/colors_and_type.css (the token
+   authority — its dark block is the full remap; the snapshot's app/globals.css
+   dark block is a stub). apps/web/app/tokens.test.ts diffs this file against
+   the reference, so edits here must keep values verbatim.
+
+   Runtime tokens live UN-LAYERED in :root / [data-theme] / [data-density] so
+   they win over Tailwind's @layer theme emissions. Anything dark- or
+   density-overridable reaches utilities as a live var() via @theme inline;
+   static scales (type, radii, tracking, leading, ease) live in @theme.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---- PALETTE — primitives (never used directly in components) ---------- */
+
+  /* Brand — Deep Teal. 700 = solid action (white text passes AA), 800 = hover,
+     600 = accent (icon tint, links, key figures, focus). */
+  --teal-50: #f0faf8;
+  --teal-100: #d6f2ec;
+  --teal-200: #abe5da;
+  --teal-300: #74d2c2;
+  --teal-400: #3fb8a5;
+  --teal-500: #1a9d8a;
+  --teal-600: #128577;
+  --teal-700: #0f766e;
+  --teal-800: #115e59;
+  --teal-900: #134e48;
+  --teal-950: #042f2c;
+
+  /* Neutral — cool, faintly teal-tinted light theme */
+  --neutral-0: #ffffff;
+  --neutral-50: #f1f6f5;
+  --neutral-100: #e9f1ef;
+  --neutral-200: #e2eae8;
+  --neutral-300: #d4e0dd;
+  --neutral-400: #93a09d;
+  --neutral-500: #6e7e7b;
+  --neutral-600: #5b6a67;
+  --neutral-700: #3c4947;
+  --neutral-800: #24302e;
+  --neutral-900: #14201e;
+  --neutral-950: #0b1413;
+
+  /* Semantic — GREEN = good / verified / money up */
+  --success-50: #ecfdf3;
+  --success-100: #d1fadf;
+  --success-500: #16a34a;
+  --success-600: #15803d;
+  --success-700: #166534;
+
+  /* Semantic — RED = bad / blocked / money down */
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-500: #dc2626;
+  --error-600: #b91c1c;
+  --error-700: #991b1b;
+
+  /* Semantic — AMBER = warning / ready / open exposure */
+  --warning-50: #fdf1e0;
+  --warning-100: #fbe3c2;
+  --warning-500: #d97706;
+  --warning-600: #b45309;
+  --warning-700: #92400e;
+
+  /* Semantic — BLUE = monitoring */
+  --info-50: #eff6ff;
+  --info-100: #dbeafe;
+  --info-500: #2563eb;
+  --info-600: #1d4ed8;
+  --info-700: #1e40af;
+
+  /* OPEN EXPOSURE — dedicated amber data ramp (light → dark = small → large) */
+  --exposure-1: #fdeeda;
+  --exposure-2: #fad7a0;
+  --exposure-3: #f4be63;
+  --exposure-4: #eca236;
+  --exposure-5: #e08a18;
+  --exposure-6: #d97706;
+  --exposure: var(--exposure-6);
+  --exposure-bg: var(--exposure-1);
+  --exposure-line: var(--exposure-2);
+
+  /* ---- SEMANTIC TOKENS — what components actually reference -------------- */
+
+  /* Surfaces & background */
+  --background: var(--neutral-50);
+  --surface: var(--neutral-0);
+  --surface-sunken: var(--neutral-100);
+  --surface-hover: var(--neutral-100);
+  --overlay: rgba(20, 32, 30, 0.45);
+
+  /* Foreground / text */
+  --fg-1: var(--neutral-900);
+  --fg-2: var(--neutral-600);
+  --fg-3: var(--neutral-400);
+  --fg-on-accent: var(--neutral-0);
+
+  /* Borders */
+  --border: var(--neutral-200);
+  --border-strong: var(--neutral-300);
+  --border-focus: var(--teal-600);
+
+  /* Brand / action */
+  --primary: var(--teal-700);
+  --primary-hover: var(--teal-800);
+  --primary-active: var(--teal-900);
+  --primary-fg: var(--neutral-0);
+  --accent: var(--teal-600);
+  --accent-subtle: var(--teal-50);
+
+  /* Money semantics — use these explicitly in analytics */
+  --money-up: var(--success-700);
+  --money-down: var(--error-600);
+  --money-flat: var(--neutral-500);
+
+  /* Signal / status convention — color status by intent, not raw hue */
+  --signal-good: var(--success-600);
+  --signal-good-bg: var(--success-50);
+  --signal-good-line: var(--success-100);
+  --signal-bad: var(--error-600);
+  --signal-bad-bg: var(--error-50);
+  --signal-bad-line: var(--error-100);
+  --signal-warn: var(--warning-600);
+  --signal-warn-bg: var(--warning-50);
+  --signal-warn-line: var(--warning-100);
+  --signal-monitor: var(--info-600);
+  --signal-monitor-bg: var(--info-50);
+  --signal-monitor-line: var(--info-100);
+
+  /* Status aliases by workflow name — the vivid -500 mark step */
+  --status-verified: var(--success-500);
+  --status-blocked: var(--error-500);
+  --status-ready: var(--exposure);
+  --status-monitoring: var(--info-500);
+
+  /* ---- CLAIM CLASSES — colour carries claim strength and nothing else ------ */
+  /* estimated (exposure, recoverable) = amber; modelled (projected, committed) = blue;
+     causal (measured, causal) = purple; bookable (verified, realized, maintained) = green;
+     failure (guardrail, reversed, negative) = red. A word always sits beside the colour. */
+  --claim-est: var(--warning-700);
+  --claim-est-bg: var(--warning-50);
+  --claim-est-line: var(--warning-100);
+  --claim-mod: var(--info-700);
+  --claim-mod-bg: var(--info-50);
+  --claim-mod-line: var(--info-100);
+  --claim-cau: #5a4a8c;
+  --claim-cau-bg: #f2eff9;
+  --claim-cau-line: #c7bbe3;
+  --claim-book: var(--success-700);
+  --claim-book-bg: var(--success-50);
+  --claim-book-line: var(--success-100);
+  --claim-bad: var(--error-700);
+  --claim-bad-bg: var(--error-50);
+  --claim-bad-line: var(--error-100);
+  --claim-neu: var(--neutral-600);
+  --claim-neu-bg: var(--neutral-100);
+  --claim-neu-line: var(--neutral-200);
+  /* Focus ring */
+  --ring: 0 0 0 3px rgba(18, 133, 119, 0.32);
+
+  /* ---- TYPOGRAPHY (stacks point at next/font variables) ------------------ */
+  --font-sans:
+    var(--font-jakarta, 'Plus Jakarta Sans'), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-inter, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  /* Neo-grotesk display face — used ONLY for the "Streamline" wordmark. */
+  --font-wordmark: var(--font-inter, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extra: 800;
+
+  /* ---- SPACING (4px grid) ------------------------------------------------ */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ---- DENSITY-AWARE SEMANTIC SPACE (default = calm) ---------------------- */
+  --pad-card: var(--space-6);
+  --pad-control: var(--space-3);
+  --gap-stack: var(--space-4);
+  --gap-inline: var(--space-3);
+  --row-h: 2.75rem;
+  --control-h: 2.5rem;
+  --text-body: var(--text-base);
+
+  /* ---- ELEVATION / SHADOW (subtle, cool teal-tinted) ---------------------- */
+  --shadow-xs: 0 1px 2px rgba(20, 32, 30, 0.05);
+  --shadow-sm: 0 1px 3px rgba(20, 32, 30, 0.07), 0 1px 2px rgba(20, 32, 30, 0.04);
+  --shadow-md:
+    0 4px 12px -2px rgba(20, 32, 30, 0.08), 0 2px 6px -2px rgba(20, 32, 30, 0.05);
+  --shadow-lg:
+    0 12px 28px -6px rgba(20, 32, 30, 0.12), 0 4px 10px -4px rgba(20, 32, 30, 0.07);
+  --shadow-xl: 0 24px 48px -12px rgba(20, 32, 30, 0.18);
+
+  /* ---- Z-INDEX LAYERS ----------------------------------------------------- */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-drawer: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
+  --z-tooltip: 1500;
+
+  /* ---- MOTION (durations; easings live in @theme) -------------------------- */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+}
+
+/* ============================================================================
+   DARK THEME — [data-theme="dark"] on <html>. Full remap ported verbatim from
+   the reference: semantic tokens AND the palette primitives that components
+   use directly, so the entire kit inverts from one place.
+   ========================================================================== */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Neutral ramp — "0/50/100" become dark surfaces; "700/800" become light ink */
+  --neutral-0: #0e1a17;
+  --neutral-50: #15211e;
+  --neutral-100: #1a2723;
+  --neutral-200: #28342f;
+  --neutral-300: #3a4640;
+  --neutral-400: #8a9994;
+  --neutral-700: #c6d2ce;
+  --neutral-800: #dce6e2;
+  /* neutral-900 / 950 stay DARK on purpose — they ink text on bright amber cells */
+
+  /* Brand teal — lifted so active nav, chips, avatars read on dark washes */
+  --teal-50: #122a25;
+  --teal-100: #163029;
+  --teal-200: #1e3e37;
+  --teal-700: #5fc9b8;
+  --teal-800: #8fe0d2;
+
+  /* Status families — tints (50/100) go dark; mark (500) stays vivid; the
+     600/700 "text" steps go LIGHT so they read on the dark tints. */
+  --success-50: #0e241a;
+  --success-100: #16432f;
+  --success-500: #22b866;
+  --success-600: #5fd89a;
+  --success-700: #7fe3ae;
+  --error-50: #2a1012;
+  --error-100: #4a1a1c;
+  --error-500: #f0563e;
+  --error-600: #ff6b57;
+  --error-700: #ff8870;
+  --warning-50: #281b05;
+  --warning-100: #43300a;
+  --warning-500: #e0962a;
+  --warning-600: #f0b045;
+  --warning-700: #f5c264;
+  --info-50: #0c1e33;
+  --info-100: #143352;
+  --info-500: #3b82f6;
+  --info-600: #6ba5ff;
+  --info-700: #8fbdff;
+
+  /* Open-exposure amber ramp — dim → bright (small → large still reads) */
+  --exposure-1: #2a1b05;
+  --exposure-2: #4a2f09;
+  --exposure-3: #7a4e10;
+  --exposure-4: #b5751c;
+  --exposure-5: #e0962a;
+  --exposure-6: #f5b342;
+  --exposure: var(--exposure-6);
+  --exposure-bg: #241803;
+  --exposure-line: #3a2706;
+
+  /* Semantic surfaces & background */
+  --background: #101a18;
+  --surface: #182421;
+  --surface-sunken: #0c1614;
+  --surface-hover: #1f2c28;
+  --overlay: rgba(2, 8, 7, 0.62);
+
+  /* Foreground / text */
+  --fg-1: #e8efec;
+  --fg-2: #9eb0ab;
+  --fg-3: #6e817b;
+  --fg-on-accent: #f0faf8;
+
+  /* Borders */
+  --border: #26332f;
+  --border-strong: #34443f;
+  --border-focus: #3fb8a5;
+
+  /* Brand / action (lifted) */
+  --primary: #0f8073;
+  --primary-hover: #13998a;
+  --primary-active: #0c655b;
+  --primary-fg: #f0faf8;
+  --accent: #3fb8a5;
+  --accent-subtle: #15302b;
+
+  /* Claim classes on dark */
+  --claim-cau: #ac9bdc;
+  --claim-cau-bg: #211e32;
+  --claim-cau-line: #443b66;
+  /* Money semantics (brightened for dark) */
+  --money-up: #45d98a;
+  --money-down: #ff6b57;
+  --money-flat: #8a9994;
+
+  /* Focus ring */
+  --ring: 0 0 0 3px rgba(63, 184, 165, 0.34);
+
+  /* Elevation — deeper, near-black shadows on dark */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.50), 0 2px 6px -2px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 14px 34px -8px rgba(0, 0, 0, 0.60), 0 6px 14px -6px rgba(0, 0, 0, 0.48);
+  --shadow-xl: 0 26px 52px -14px rgba(0, 0, 0, 0.70);
+}
+
+/* Smooth the flip between themes (respect reduced motion). */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    transition: background-color var(--dur-base) var(--ease-out);
+  }
+}
+
+/* ============================================================================
+   DENSE MODE — analytics surfaces. Apply [data-density="dense"] on a container
+   and every density-aware token tightens at once.
+   ========================================================================== */
+[data-density='dense'] {
+  --pad-card: var(--space-4);
+  --pad-control: var(--space-2);
+  --gap-stack: var(--space-3);
+  --gap-inline: var(--space-2);
+  --row-h: 2.25rem;
+  --control-h: 2rem;
+  --text-body: var(--text-sm);
+}
+
+/* ============================================================================
+   TAILWIND BRIDGE — live references, so dark/density overrides flow through
+   to utilities at the consuming element (@theme inline skips the intermediate
+   custom property that would freeze values at :root).
+   ========================================================================== */
+@theme inline {
+  /* Brand ramp */
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
+  --color-teal-950: var(--teal-950);
+
+  /* Cool teal-tinted neutral ramp */
+  --color-neutral-0: var(--neutral-0);
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
+  --color-neutral-950: var(--neutral-950);
+
+  /* Status hues */
+  --color-success-50: var(--success-50);
+  --color-success-100: var(--success-100);
+  --color-success-500: var(--success-500);
+  --color-success-600: var(--success-600);
+  --color-success-700: var(--success-700);
+  --color-error-50: var(--error-50);
+  --color-error-100: var(--error-100);
+  --color-error-500: var(--error-500);
+  --color-error-600: var(--error-600);
+  --color-error-700: var(--error-700);
+  --color-warning-50: var(--warning-50);
+  --color-warning-100: var(--warning-100);
+  --color-warning-500: var(--warning-500);
+  --color-warning-600: var(--warning-600);
+  --color-warning-700: var(--warning-700);
+  --color-info-50: var(--info-50);
+  --color-info-100: var(--info-100);
+  --color-info-500: var(--info-500);
+  --color-info-600: var(--info-600);
+  --color-info-700: var(--info-700);
+
+  /* Open exposure — amber data ramp */
+  --color-exposure: var(--exposure);
+  --color-exposure-1: var(--exposure-1);
+  --color-exposure-2: var(--exposure-2);
+  --color-exposure-3: var(--exposure-3);
+  --color-exposure-4: var(--exposure-4);
+  --color-exposure-5: var(--exposure-5);
+  --color-exposure-6: var(--exposure-6);
+  --color-exposure-bg: var(--exposure-bg);
+  --color-exposure-line: var(--exposure-line);
+
+  /* Semantic aliases — prefer these in components */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-on-accent: var(--fg-on-accent);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-fg: var(--primary-fg);
+  --color-accent: var(--accent);
+  --color-accent-subtle: var(--accent-subtle);
+
+  /* Money meaning — keep separate from brand */
+  --color-up: var(--money-up);
+  --color-down: var(--money-down);
+  --color-flat: var(--money-flat);
+
+  /* Density-aware semantic spacing (p-card, gap-stack, gap-inline). NOTE:
+     no --spacing-control — it would also generate h-control/w-control from
+     the spacing namespace and override the height-valued @utility versions
+     below (components reach the pad via var(--pad-control) directly). */
+  --spacing-card: var(--pad-card);
+  --spacing-stack: var(--gap-stack);
+  --spacing-inline: var(--gap-inline);
+}
+
+/* Static scales — single definition here; Tailwind emits them on :root so
+   runtime var() consumers (shell CSS) resolve them too. */
+@theme {
+  /* Type scale (v3 fontSize parity, incl. line-height/tracking/weight) */
+  --text-display: 2.25rem;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+  --text-h1: 1.75rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 700;
+  --text-h2: 1.375rem;
+  --text-h2--line-height: 1.35;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h2--font-weight: 700;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 600;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.5;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.5;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.35;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.35;
+  --text-stat: 2rem;
+  --text-stat--line-height: 1.1;
+  --text-stat--letter-spacing: -0.02em;
+  --text-stat--font-weight: 600;
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+
+  /* Radii (crisp / minimal) — xl is the MAX surface radius; the default
+     2xl–4xl steps are removed to enforce the 12px ceiling. */
+  --radius-*: initial;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --animate-fade-in: fade-in var(--dur-base) var(--ease-out);
+  --animate-slide-in-right: slide-in-right var(--dur-slow) var(--ease-out);
+  --animate-shimmer: shimmer 1.4s infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Shadows are runtime tokens (dark remaps them) — drop the default scale;
+     the shadow-* utilities are re-declared below against the live vars. */
+  --shadow-*: initial;
+}
+
+/* Shadow + height + duration utilities have no safe v4 theme namespace for
+   live-var values (heights would collide with --spacing-*, shadows with their
+   own runtime names), so they're declared directly — v3 utility-name parity. */
+@utility shadow-xs {
+  box-shadow: var(--shadow-xs);
+}
+@utility shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+@utility shadow-md {
+  box-shadow: var(--shadow-md);
+}
+@utility shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+@utility shadow-xl {
+  box-shadow: var(--shadow-xl);
+}
+@utility shadow-ring {
+  box-shadow: var(--ring);
+}
+
+@utility h-control {
+  height: var(--control-h);
+}
+@utility h-row {
+  height: var(--row-h);
+}
+@utility min-h-control {
+  min-height: var(--control-h);
+}
+@utility min-h-row {
+  min-height: var(--row-h);
+}
+/* Deliberate fix of a latent prototype bug: v3 resolved w-control from the
+   spacing scale (12px pad); square icon buttons clearly intend the control
+   height. */
+@utility w-control {
+  width: var(--control-h);
+}
+
+@utility duration-fast {
+  transition-duration: var(--dur-fast);
+}
+@utility duration-base {
+  transition-duration: var(--dur-base);
+}
+@utility duration-slow {
+  transition-duration: var(--dur-slow);
+}
+
+/* ============================================================================
+   BASE STYLES — ported from the snapshot's app/globals.css
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--fg-1);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Numbers align by default anywhere mono is used. */
+  .font-mono,
+  code,
+  kbd {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Global accessible focus — every interactive element. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ============================================================================
+   APP STYLES — screens are class-based CSS on top of the tokens. Prefixes keep
+   route CSS from colliding (App Router accumulates route CSS globally).
+   ========================================================================== */
+@import "../components/shell/shell.css";
+@import "./screens.css";

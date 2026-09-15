@@ -8,11 +8,11 @@
  *
  * A failed placebo produces INCONCLUSIVE downstream — never a smaller number.
  */
-import { addDays, type IsoDate, weekOf } from "./dates.js";
-import { formatPct, formatUsd } from "./money.js";
-import type { ItemDay, Register, Service } from "./register.js";
-import { groupBy } from "./register.js";
-import { mean, pearson, seDiff, sum, tq, variance, welchDf, zq } from "./stats.js";
+import { addDays, type IsoDate, weekOf } from "./dates";
+import { formatPct, formatUsd } from "./money";
+import type { ItemDay, Register, Service } from "./register";
+import { groupBy } from "./register";
+import { mean, pearson, seDiff, sum, tq, variance, welchDf, zq } from "./stats";
 
 export interface DatedValue {
   date: IsoDate;

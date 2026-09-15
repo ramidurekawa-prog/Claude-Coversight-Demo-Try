@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canFindingTransition, canInterventionTransition, FINDING_STATES, IV_STATES, type InterventionState } from "../src/states.js";
+import { canFindingTransition, canInterventionTransition, FINDING_STATES, IV_STATES, type InterventionState } from "../src/states";
 
 describe("intervention state machine (System 9)", () => {
   it("forbids a recommendation becoming verified, and execution alone verifying", () => {

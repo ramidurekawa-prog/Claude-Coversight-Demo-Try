@@ -1,6 +1,6 @@
 import type { ChangeDetailResponse, DataResponse, DecideFindingResponse, FindingDetailResponse, FindingsResponse, HomeResponse, MeResponse, ProofResponse, TodayResponse, CompleteActionResponse, AdvanceClockResponse } from "@streamline/contracts";
 import { describe, expect, it } from "vitest";
-import { createTestApp, get, post, signIn } from "../src/test-helpers.js";
+import { createTestApp, get, post, signIn } from "../src/test-helpers";
 
 const money = (v: unknown) => (v as { cents: number }).cents;
 

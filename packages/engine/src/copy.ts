@@ -2,9 +2,9 @@
  * House sentences — Doctrine 10. Plain language first, derivation underneath.
  * Every sentence is built from computed figures; nothing here invents a number.
  */
-import { formatDate } from "./dates.js";
-import type { InterventionEval } from "./interventions.js";
-import { formatUsd } from "./money.js";
+import { formatDate } from "./dates";
+import type { InterventionEval } from "./interventions";
+import { formatUsd } from "./money";
 
 export function plainOutcome(iv: InterventionEval): string {
   const r = iv.result;

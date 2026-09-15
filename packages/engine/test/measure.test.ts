@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { addDays } from "../src/dates.js";
-import { did, reconcileA, toWeekly } from "../src/measure.js";
+import { addDays } from "../src/dates";
+import { did, reconcileA, toWeekly } from "../src/measure";
 
 function lcg(seed: number) {
   let s = seed >>> 0;

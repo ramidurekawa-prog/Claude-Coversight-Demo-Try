@@ -3,9 +3,9 @@
  * They are append-only in storage: an id, once assigned, keeps its kind and its
  * intervention; new ones are numbered after the last.
  */
-import { daysBetween, type IsoDate } from "./dates.js";
-import type { InterventionEval } from "./interventions.js";
-import type { Adjustment } from "./ledger.js";
+import { daysBetween, type IsoDate } from "./dates";
+import type { InterventionEval } from "./interventions";
+import type { Adjustment } from "./ledger";
 
 export type UnnumberedAdjustment = Omit<Adjustment, "id">;
 

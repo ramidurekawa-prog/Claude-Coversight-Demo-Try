@@ -6,15 +6,15 @@
  *
  * Computed once per (scope, asOf). Every surface reads this; none recomputes.
  */
-import { daysBetween, daysInMonth, formatDateYear, type IsoDate, monthOf, weekOf } from "./dates.js";
-import type { FindingCore, Qualification } from "./detectors.js";
-import { accrualSeries, type InterventionEval } from "./interventions.js";
-import { type DatedValue } from "./measure.js";
-import { type ClaimClass, Money, type Cents } from "./money.js";
-import type { FeedHealth, Location } from "./register.js";
-import { assertMetricContract, CALC_VERSION, type MetricContract, type ReconStatus, RECON_STATUS } from "./registry.js";
-import { FINDING_STATES, type FindingState } from "./states.js";
-import { apportion, mean, median } from "./stats.js";
+import { daysBetween, daysInMonth, formatDateYear, type IsoDate, monthOf, weekOf } from "./dates";
+import type { FindingCore, Qualification } from "./detectors";
+import { accrualSeries, type InterventionEval } from "./interventions";
+import { type DatedValue } from "./measure";
+import { type ClaimClass, Money, type Cents } from "./money";
+import type { FeedHealth, Location } from "./register";
+import { assertMetricContract, CALC_VERSION, type MetricContract, type ReconStatus, RECON_STATUS } from "./registry";
+import { FINDING_STATES, type FindingState } from "./states";
+import { apportion, mean, median } from "./stats";
 
 export interface LedgerFinding extends FindingCore {
   state: FindingState;
@@ -456,7 +456,7 @@ export interface Bridge {
   lines: BridgeLine[];
 }
 
-import { formatPct, formatUsd } from "./money.js";
+import { formatPct, formatUsd } from "./money";
 
 export function bridge(iv: InterventionEval, claimCents: Cents, side: LedgerSide): Bridge {
   const acct = iv.account;

@@ -3,13 +3,13 @@
  * consequence of inaction (versioned policy), never by value. An empty queue
  * is a valid state.
  */
-import { formatDate, type IsoDate } from "./dates.js";
-import { plainOutcome } from "./copy.js";
-import type { Adjustment, LedgerAction, LedgerFinding } from "./ledger.js";
-import { inScope } from "./ledger.js";
-import type { InterventionEval } from "./interventions.js";
-import { formatPct } from "./money.js";
-import type { FeedHealth } from "./register.js";
+import { formatDate, type IsoDate } from "./dates";
+import { plainOutcome } from "./copy";
+import type { Adjustment, LedgerAction, LedgerFinding } from "./ledger";
+import { inScope } from "./ledger";
+import type { InterventionEval } from "./interventions";
+import { formatPct } from "./money";
+import type { FeedHealth } from "./register";
 
 export type CardType = "action_due" | "high_value" | "missing_evidence" | "window_eligible" | "verification_exception" | "guardrail" | "data_quality" | "persistence" | "reversal" | "recon_question" | "overlap";
 

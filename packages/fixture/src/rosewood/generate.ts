@@ -9,8 +9,8 @@
  */
 import type { AppliedChange, CanonicalRegister, CheckRow, Feed, InvoiceLine, IsoDate, MenuItem, OrderItemRow, ReservationRow, ReviewRow, ShiftRow } from "@streamline/engine";
 import { addDays, dayOfWeek, daysBetween, priceOn, weekOf } from "@streamline/engine";
-import { rngFor } from "../rng.js";
-import { CLOSURES, DAYPARTS, END, FEED_SPECS, FEED_STALENESS, FIXES, FIXTURE, HOLIDAYS, LOCATIONS, MENU, ROLES, SIGNALS, SKUS, START } from "./spec.js";
+import { rngFor } from "../rng";
+import { CLOSURES, DAYPARTS, END, FEED_SPECS, FEED_STALENESS, FIXES, FIXTURE, HOLIDAYS, LOCATIONS, MENU, ROLES, SIGNALS, SKUS, START } from "./spec";
 
 export interface RecipeCostRow {
   menuItemId: string;

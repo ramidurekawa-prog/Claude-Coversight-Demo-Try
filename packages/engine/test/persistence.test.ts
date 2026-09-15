@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { addDays } from "../src/dates.js";
-import { decayAt, persistence } from "../src/persistence.js";
+import { addDays } from "../src/dates";
+import { decayAt, persistence } from "../src/persistence";
 
 const weekly = (vals: number[]) => vals.map((y, i) => ({ date: addDays("2026-07-20", 7 * (i + 1)), y }));
 

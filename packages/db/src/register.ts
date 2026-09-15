@@ -5,8 +5,8 @@
 import type { Daypart, InvoiceLine, ItemDay, Location, MenuItem, Register, ReservationDay, RoleDef, Service, Shift, Sku } from "@streamline/engine";
 import { and, asc, eq, gt } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
-import type { StreamlineDb } from "./repositories.js";
-import { dayparts, invoiceLines, itemDays, locations, menuItems, reservationDays, roles, services, shifts, skus } from "./schema.js";
+import type { StreamlineDb } from "./repositories";
+import { dayparts, invoiceLines, itemDays, locations, menuItems, reservationDays, roles, services, shifts, skus } from "./schema";
 
 /** Stay well under Postgres' 65,535 bind-parameter limit (widest table ≈ 18 columns). */
 const CHUNK = 500;

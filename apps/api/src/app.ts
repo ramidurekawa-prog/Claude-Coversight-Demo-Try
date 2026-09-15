@@ -10,11 +10,11 @@ import { loadRegister } from "@streamline/db";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { hasZodFastifySchemaValidationErrors, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
 import { z, ZodError } from "zod";
-import { createAuth, type Auth, type AuthConfig } from "./auth/auth.js";
-import { mountAuth } from "./auth/mount.js";
-import { makeRequireAuth, requireRole } from "./auth/require-auth.js";
-import { ledgerInput, loadOrgContext, resolveScope, type OrgContext } from "./context.js";
-import { auditEvent, findingSummary, interventionSummary, pipelineRun } from "./projections.js";
+import { createAuth, type Auth, type AuthConfig } from "./auth/auth";
+import { mountAuth } from "./auth/mount";
+import { makeRequireAuth, requireRole } from "./auth/require-auth";
+import { ledgerInput, loadOrgContext, resolveScope, type OrgContext } from "./context";
+import { auditEvent, findingSummary, interventionSummary, pipelineRun } from "./projections";
 
 export const API_VERSION = "0.1.0";
 

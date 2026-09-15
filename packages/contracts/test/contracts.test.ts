@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, ApiRequestError, apiFetch, CompleteActionBody, HealthResponse, Kpi, QueueCard } from "../src/index.js";
+import { ApiError, ApiRequestError, apiFetch, CompleteActionBody, HealthResponse, Kpi, QueueCard } from "../src/index";
 
 const contract = {
   definition: "Persistent verified savings",

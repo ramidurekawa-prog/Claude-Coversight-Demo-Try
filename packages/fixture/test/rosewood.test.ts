@@ -1,6 +1,6 @@
 import { BANNED_WORDS, recoverableOf, rollupRegister, kpis, type Money, daysBetween } from "@streamline/engine";
 import { describe, expect, it } from "vitest";
-import { buildRosewood, generateCanonical, registerFingerprint, FIXTURE, HISTORICAL_FINDINGS, SIGNALS, INTERVENTIONS, PERSONAS, buildHarbor, ROSEWOOD_ORG_ID, HARBOR_ORG_ID, LOCATIONS } from "../src/index.js";
+import { buildRosewood, generateCanonical, registerFingerprint, FIXTURE, HISTORICAL_FINDINGS, SIGNALS, INTERVENTIONS, PERSONAS, buildHarbor, ROSEWOOD_ORG_ID, HARBOR_ORG_ID, LOCATIONS } from "../src/index";
 
 /**
  * Pinned to FIXTURE.version. If this fails you changed the generator: bump the

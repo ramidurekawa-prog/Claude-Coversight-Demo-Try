@@ -7,10 +7,10 @@
  * Failed, rejected and inconclusive results are returned with their reason so
  * they can be stored permanently and rendered.
  */
-import type { GuardrailResult } from "./guardrails.js";
-import type { Estimate } from "./measure.js";
-import { formatPct, formatUsd, Money } from "./money.js";
-import { RUNGS, VERIFICATION_OUTCOMES, type VerificationOutcome } from "./registry.js";
+import type { GuardrailResult } from "./guardrails";
+import type { Estimate } from "./measure";
+import { formatPct, formatUsd, Money } from "./money";
+import { RUNGS, VERIFICATION_OUTCOMES, type VerificationOutcome } from "./registry";
 
 export type ExecutionFidelity = "not_started" | "partial" | "complete" | "modified" | "unknown";
 

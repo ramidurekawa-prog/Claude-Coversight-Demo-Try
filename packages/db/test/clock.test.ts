@@ -1,10 +1,10 @@
 import { HARBOR_ORG_ID, ROSEWOOD_ORG_ID } from "@streamline/fixture";
 import { describe, expect, it } from "vitest";
-import { advanceClock, feedHealthOf } from "../src/nightly.js";
-import { loadRegister, servicesAfter } from "../src/register.js";
-import { createRepositories } from "../src/repositories.js";
-import { seedDemo } from "../src/seed.js";
-import { freshDb } from "../src/test-helpers.js";
+import { advanceClock, feedHealthOf } from "../src/nightly";
+import { loadRegister, servicesAfter } from "../src/register";
+import { createRepositories } from "../src/repositories";
+import { seedDemo } from "../src/seed";
+import { freshDb } from "../src/test-helpers";
 
 describe("the demo clock", () => {
   it("lands the next slice of register, closes the open window and verifies it", async () => {

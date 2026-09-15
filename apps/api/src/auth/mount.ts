@@ -1,6 +1,6 @@
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
-import type { Auth } from "./auth.js";
+import type { Auth } from "./auth";
 
 /** The only better-auth endpoints that exist over HTTP. Sign-up answers 404: accounts come from the seed or an invite. */
 const PUBLIC_AUTH_PATHS = new Set(["sign-in/email", "sign-out", "get-session"]);

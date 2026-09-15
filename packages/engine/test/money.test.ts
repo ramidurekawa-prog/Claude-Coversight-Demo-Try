@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertCents, BANNED_WORDS, formatUsd, Money, RESERVED_WORDS, sumMoney } from "../src/money.js";
+import { assertCents, BANNED_WORDS, formatUsd, Money, RESERVED_WORDS, sumMoney } from "../src/money";
 
 describe("Money", () => {
   it("is integer cents, always", () => {

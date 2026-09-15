@@ -7,8 +7,8 @@
  * reciprocal of the slope. The intercept is the room's fixed floor. No cover
  * cap anywhere.
  */
-import type { Service } from "./register.js";
-import { mean, quantile, sum } from "./stats.js";
+import type { Service } from "./register";
+import { mean, quantile, sum } from "./stats";
 
 export interface ServiceRate {
   /** Marginal covers per server-hour; null when the slope is not identified to ±8%. */

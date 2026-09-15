@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { GuardrailResult } from "../src/guardrails.js";
-import type { EstimateOk } from "../src/measure.js";
-import { __mintWithWrongToken, runGates, verificationService, type VerificationInput } from "../src/verify.js";
+import type { GuardrailResult } from "../src/guardrails";
+import type { EstimateOk } from "../src/measure";
+import { __mintWithWrongToken, runGates, verificationService, type VerificationInput } from "../src/verify";
 
 const est = (over: Partial<EstimateOk> = {}): EstimateOk => ({
   ok: true,

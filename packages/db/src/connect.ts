@@ -12,8 +12,8 @@ import { migrate as migrateNodePg } from "drizzle-orm/node-postgres/migrator";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
 import pg from "pg";
-import type { StreamlineDb } from "./repositories.js";
-import * as schema from "./schema.js";
+import type { StreamlineDb } from "./repositories";
+import * as schema from "./schema";
 
 export const MIGRATIONS_FOLDER = fileURLToPath(new URL("../migrations", import.meta.url));
 export const DEFAULT_PGLITE_DIR = fileURLToPath(new URL("../data/pglite", import.meta.url));
@@ -47,7 +47,7 @@ export async function connectDatabase(opts: ConnectOptions = {}): Promise<Connec
       close: () => pool.end(),
     };
   }
-  const dir = opts.dataDir ?? DEFAULT_PGLITE_DIR;
+  const dir = opts.dataDir ?? process.env.STREAMLINE_PGLITE_DIR ?? DEFAULT_PGLITE_DIR;
   const client = dir === "memory" ? new PGlite() : (mkdirSync(dir, { recursive: true }), new PGlite(dir));
   const db = drizzlePglite(client, { schema });
   await migratePglite(db, { migrationsFolder: MIGRATIONS_FOLDER });

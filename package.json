@@ -2,7 +2,7 @@
   "name": "streamline-coversight-demo",
   "private": true,
   "version": "0.1.0",
-  "description": "Streamline by Coversight — closed-loop margin controller for restaurant groups (sales demo)",
+  "description": "Streamline by Coversight \u2014 closed-loop margin controller for restaurant groups (sales demo)",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22.13"
@@ -15,12 +15,14 @@
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "pnpm --filter @streamline/web build && playwright test",
     "db:reset": "pnpm --filter @streamline/db reset",
     "db:seed": "pnpm --filter @streamline/db seed",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "dev:api": "pnpm --filter @streamline/api dev",
-    "dev:web": "pnpm --filter @streamline/web dev"
+    "dev:web": "pnpm --filter @streamline/web dev",
+    "e2e:ui": "playwright test --ui",
+    "demo": "pnpm --filter @streamline/web build && concurrently -n api,web -c blue,green \"pnpm --filter @streamline/api demo\" \"pnpm --filter @streamline/web start\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertMetricContract, CONF_DIMS, EQ, equation, RUNGS, UNITS, VERIFICATION_OUTCOMES } from "../src/registry.js";
+import { assertMetricContract, CONF_DIMS, EQ, equation, RUNGS, UNITS, VERIFICATION_OUTCOMES } from "../src/registry";
 
 describe("registries", () => {
   it("every equation carries a valid unit and a family", () => {

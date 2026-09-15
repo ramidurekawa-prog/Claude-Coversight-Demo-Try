@@ -7,10 +7,10 @@
 import { ENGINE_VERSION, type InterventionEval, type LedgerFinding } from "@streamline/engine";
 import { buildHarbor, buildRosewood, FEED_STALENESS, FIXTURE, HARBOR_ORG, INVESTIGATIONS, LOCATIONS, PERSONAS, registerFingerprint, REJECTED_FINDING, ROSEWOOD_ORG_ID, rosewoodId, type Persona, type RosewoodBuild } from "@streamline/fixture";
 import { eq, inArray } from "drizzle-orm";
-import { hashPassword } from "./password.js";
-import { insertCatalogue, insertRegisterRows } from "./register.js";
-import { createRepositories, type AuditInput, type StreamlineDb } from "./repositories.js";
-import { accounts, actions, adjustments, auditEvents, dayparts, feeds, findings, gmLocationScopes, interventions, invoiceLines, itemDays, ledgerSides, locations, memberships, menuItems, orgs, pipelineRuns, reservationDays, roles, seedState, services, shifts, skcAdmins, skus, users, verificationResults } from "./schema.js";
+import { hashPassword } from "./password";
+import { insertCatalogue, insertRegisterRows } from "./register";
+import { createRepositories, type AuditInput, type StreamlineDb } from "./repositories";
+import { accounts, actions, adjustments, auditEvents, dayparts, feeds, findings, gmLocationScopes, interventions, invoiceLines, itemDays, ledgerSides, locations, memberships, menuItems, orgs, pipelineRuns, reservationDays, roles, seedState, services, shifts, skcAdmins, skus, users, verificationResults } from "./schema";
 
 export interface SeedResult {
   rosewood: "seeded" | "noop";

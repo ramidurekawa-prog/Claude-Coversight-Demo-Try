@@ -4,8 +4,8 @@
  * moment the org is not yet known. Everything after goes through repositories.
  */
 import { eq } from "drizzle-orm";
-import type { StreamlineDb } from "./repositories.js";
-import { memberships, skcAdmins, users } from "./schema.js";
+import type { StreamlineDb } from "./repositories";
+import { memberships, skcAdmins, users } from "./schema";
 
 export function createIdentityRepositories(db: StreamlineDb) {
   return {

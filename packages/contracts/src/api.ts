@@ -23,7 +23,7 @@ import {
   Location,
   Period,
   QueueCard,
-} from "./engine.js";
+} from "./engine";
 import {
   AutonomyLevel,
   Cents,
@@ -39,7 +39,7 @@ import {
   ReconStatus,
   RejectionCode,
   VerificationOutcome,
-} from "./primitives.js";
+} from "./primitives";
 
 /* ---------- summary projections ------------------------------------------- */
 

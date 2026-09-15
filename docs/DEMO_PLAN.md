@@ -143,10 +143,10 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
 | 3 | Compare, select, port and integrate proven implementation from the reference monorepo | done | `docs/REFERENCE_COMPARISON.md`: Postgres-dialect Drizzle + PGlite, Fastify + better-auth, canonical Toast-shaped rows, design tokens. Toolchain: Next 16, TS 5.9, Vitest 4, Playwright 1.56.1 |
 | 4 | Engine: money/claims, stats, charts + change-point, DiD/reconcile, gates, mint, overlap, state machines, detectors, rollup, pipeline, ledger, confidence, queue | done | 61 tests; purity enforced |
 | 5 | Fixture: Rosewood canonical generator + declared history + build + Harbor House + personas | done | 23 tests; planted signals found; outcomes computed; fingerprint pinned |
-| 6 | DB: schema, migrations, org-scoped repos, seed, demo clock, nightly job | in progress | |
-| 7 | API: Fastify routes + contracts + better-auth + location scope | pending | |
-| 8 | UI: tokens/shell port, eight surfaces, states | pending | |
-| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | pending | |
+| 6 | DB: Postgres-dialect schema on PGlite, migrations, org-first repos, seed, nightly job, demo clock | done | 5 tests incl. clock advance closing a window |
+| 7 | API: Fastify routes + contracts + better-auth + location scope | done | 41 tests: tenancy, scope, decisions, execution, the full loop through a clock advance |
+| 8 | UI: tokens/shell port, eight surfaces, states | in progress | Home, login, shell, charts, demo controls done; Today/Actions/Data, Findings/detail/Recovery, Changes/detail/Proof/packet in parallel streams |
+| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | in progress | `e2e/demo-flow.spec.ts` written (desktop + iPhone 13 against a production build) |
 | 10 | Manual walkthrough + fixes + docs refresh | pending | |
 | 11 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
 
@@ -165,6 +165,17 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
   needs the loop to close in minutes, and it keeps the engine's `asOf` discipline explicit.
 - **Product name**: UI says "Streamline" with "by Coversight"; packages are `@streamline/*`.
 
-## 9. Blockers
+## 9. How to run the demo
+
+```
+pnpm install
+pnpm demo          # production build of the web app, then API :3001 and web :3000
+```
+
+Open http://localhost:3000, sign in as Rose Jorge (owner) with the published demo password, and follow
+§3. The business-date chip in the top bar opens the demo controls (advance the clock, reset). Use
+`pnpm dev` for development; present with `pnpm demo` (see docs/DEMO_TEST_CHECKLIST.md, "Running it").
+
+## 10. Blockers
 
 None. Nothing in the demo scope needs an external credential or service.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apportion, mean, median, pearson, quantile, sd, slope, tq, variance, zq } from "../src/stats.js";
+import { apportion, mean, median, pearson, quantile, sd, slope, tq, variance, zq } from "../src/stats";
 
 describe("stats", () => {
   it("basic moments", () => {

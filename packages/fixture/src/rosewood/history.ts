@@ -5,7 +5,7 @@
  * estimator and the verification service. None is written down.
  */
 import type { Adjustment, InterventionDecl, LedgerAction, LedgerSide } from "@streamline/engine";
-import { LOCATIONS } from "./spec.js";
+import { LOCATIONS } from "./spec";
 
 const STOP_LABOUR = "Ticket time above +1.5 min or rating below −0.15 — reverse immediately";
 const CONF_LABOUR = ["Seasonality", "Day of week", "Local events", "Staffing disruption", "Manager changes"];

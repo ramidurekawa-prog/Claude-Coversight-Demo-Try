@@ -3,11 +3,11 @@
  * Pure. The database materialises the result and stamps it with the engine
  * version; the detectors and estimators read only the rollup.
  */
-import type { IsoDate } from "./dates.js";
-import { dayOfWeek } from "./dates.js";
-import type { Cents } from "./money.js";
-import { groupBy, type Daypart, type InvoiceLine, type ItemDay, type Location, type MenuItem, type Register, type ReservationDay, type RoleDef, type Service, type Shift, type Sku } from "./register.js";
-import { mean, sum } from "./stats.js";
+import type { IsoDate } from "./dates";
+import { dayOfWeek } from "./dates";
+import type { Cents } from "./money";
+import { groupBy, type Daypart, type InvoiceLine, type ItemDay, type Location, type MenuItem, type Register, type ReservationDay, type RoleDef, type Service, type Shift, type Sku } from "./register";
+import { mean, sum } from "./stats";
 
 export interface CheckRow {
   id: string;

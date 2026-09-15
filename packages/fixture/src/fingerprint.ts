@@ -3,7 +3,7 @@
  * caught by a test and paired with a FIXTURE.version bump — never silent.
  */
 import type { Register } from "@streamline/engine";
-import { seedFromLabel } from "./rng.js";
+import { seedFromLabel } from "./rng";
 
 export function registerFingerprint(reg: Register): string {
   const parts: string[] = [];

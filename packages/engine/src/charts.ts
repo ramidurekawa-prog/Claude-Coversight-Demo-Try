@@ -2,8 +2,8 @@
  * Control charts (E2 EWMA, E3 CUSUM) with a stated false-alarm rate, naming the
  * day a drift started. Repeat floors are not used.
  */
-import { mean, sd } from "./stats.js";
-import type { IsoDate } from "./dates.js";
+import { mean, sd } from "./stats";
+import type { IsoDate } from "./dates";
 
 export interface SeriesPoint {
   date: IsoDate;

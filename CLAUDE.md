@@ -14,10 +14,11 @@ The product/architecture specification is the "SKC Full layout" document supplie
 
 ```
 pnpm install            # once
-pnpm db:seed            # build the synthetic Rosewood register + history into packages/db/data/streamline.db
-pnpm dev                # Next.js on http://localhost:3000
+pnpm db:seed            # build the synthetic Rosewood register + history into packages/db/data/pglite (the API also seeds on start)
+pnpm demo               # PRESENT WITH THIS: production build, then API :3001 + web :3000
+pnpm dev                # hot-reloading dev servers (API :3001, web :3000)
 pnpm typecheck | pnpm lint | pnpm test | pnpm e2e
-pnpm check              # typecheck + lint + unit tests + build (what CI runs)
+pnpm check              # typecheck + lint + unit/API tests + build (what CI runs)
 pnpm db:reset           # delete and re-seed the demo database
 ```
 

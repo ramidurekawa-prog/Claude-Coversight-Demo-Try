@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayOfWeek, daysBetween, daysInMonth, formatDate, fromDayNumber, toDayNumber, weekOf } from "../src/dates.js";
+import { addDays, dayOfWeek, daysBetween, daysInMonth, formatDate, fromDayNumber, toDayNumber, weekOf } from "../src/dates";
 
 describe("dates (no Date objects)", () => {
   it("round-trips civil dates", () => {

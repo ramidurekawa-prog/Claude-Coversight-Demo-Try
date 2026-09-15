@@ -9,9 +9,9 @@ import { addDays, deriveAdjustments, ENGINE_VERSION, evaluateIntervention, expir
 import { accrualInPeriod } from "@streamline/engine";
 import { buildFeeds, closedPeriodFor, FIXTURE, generateCanonical, ledgerSideFor } from "@streamline/fixture";
 import { rollupRegister } from "@streamline/engine";
-import { insertRegisterRows, lastInvoiceWeek, loadRegister } from "./register.js";
-import { createRepositories, type AuditInput, type StreamlineDb } from "./repositories.js";
-import type { FeedRow, Org } from "./schema.js";
+import { insertRegisterRows, lastInvoiceWeek, loadRegister } from "./register";
+import { createRepositories, type AuditInput, type StreamlineDb } from "./repositories";
+import type { FeedRow, Org } from "./schema";
 
 const SYSTEM = "System · nightly job";
 

@@ -2,7 +2,7 @@ import { freshDb } from "@streamline/db/test-helpers";
 import { seedDemo } from "@streamline/db";
 import type { FastifyInstance } from "fastify";
 import { onTestFinished } from "vitest";
-import { buildApp } from "./app.js";
+import { buildApp } from "./app";
 
 export async function createTestApp() {
   const db = await freshDb();

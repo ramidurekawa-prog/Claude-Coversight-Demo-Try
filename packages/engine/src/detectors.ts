@@ -3,14 +3,14 @@
  * chart, never a constant. Signals are planted in the data by the fixture; the
  * detectors have to find them the way they would in a real register.
  */
-import { cusumChart, driftOnset, ewmaChart, type DriftOnset, type SeriesPoint } from "./charts.js";
-import { addDays, DOW_SHORT, formatDate, type IsoDate, MONTH_SHORT, weekOf } from "./dates.js";
-import { measureRate, requiredHours } from "./labour.js";
-import { formatPct, formatUsd, type Cents } from "./money.js";
-import type { FeedHealth, Register } from "./register.js";
-import { groupBy, menuById, skuById } from "./register.js";
-import { leverMeta, type AutonomyLevel, type Lever, type MeasurementFamily } from "./registry.js";
-import { mean, sum, tq } from "./stats.js";
+import { cusumChart, driftOnset, ewmaChart, type DriftOnset, type SeriesPoint } from "./charts";
+import { addDays, DOW_SHORT, formatDate, type IsoDate, MONTH_SHORT, weekOf } from "./dates";
+import { measureRate, requiredHours } from "./labour";
+import { formatPct, formatUsd, type Cents } from "./money";
+import type { FeedHealth, Register } from "./register";
+import { groupBy, menuById, skuById } from "./register";
+import { leverMeta, type AutonomyLevel, type Lever, type MeasurementFamily } from "./registry";
+import { mean, sum, tq } from "./stats";
 
 export interface Cause {
   cause: string;

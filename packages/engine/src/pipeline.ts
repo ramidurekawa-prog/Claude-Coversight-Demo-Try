@@ -4,13 +4,13 @@
  * (human decisions, conversions, terminal endings) is preserved: re-detection
  * refreshes evidence, never resets a decision.
  */
-import { addDays, type IsoDate } from "./dates.js";
-import { detectors, evPerHour, qualify, recoverableOf, type FindingCore } from "./detectors.js";
-import type { LedgerFinding } from "./ledger.js";
-import { formatUsd } from "./money.js";
-import { resolveOverlaps, type OverlapClaim } from "./overlap.js";
-import type { FeedHealth, Register } from "./register.js";
-import { FINDING_STATES, type FindingState } from "./states.js";
+import { addDays, type IsoDate } from "./dates";
+import { detectors, evPerHour, qualify, recoverableOf, type FindingCore } from "./detectors";
+import type { LedgerFinding } from "./ledger";
+import { formatUsd } from "./money";
+import { resolveOverlaps, type OverlapClaim } from "./overlap";
+import type { FeedHealth, Register } from "./register";
+import { FINDING_STATES, type FindingState } from "./states";
 
 export interface PriorFinding {
   state: FindingState;

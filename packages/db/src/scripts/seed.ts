@@ -1,5 +1,5 @@
-import { connectDatabase } from "../connect.js";
-import { seedDemo } from "../seed.js";
+import { connectDatabase } from "../connect";
+import { seedDemo } from "../seed";
 
 process.env.STREAMLINE_FAST_HASH ??= "1";
 const conn = await connectDatabase();

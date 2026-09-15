@@ -5,7 +5,7 @@
  * imports: it runs in the browser, in a Next server component, and in tests.
  */
 import type { z } from "zod";
-import { ApiError } from "./api.js";
+import { ApiError } from "./api";
 
 export class ApiRequestError extends Error {
   override readonly name = "ApiRequestError";

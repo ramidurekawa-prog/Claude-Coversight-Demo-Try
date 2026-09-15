@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centsInScope, shareOf } from "../src/ledger.js";
+import { centsInScope, shareOf } from "../src/ledger";
 
 const ALL = ["oak", "brk", "ala"];
 

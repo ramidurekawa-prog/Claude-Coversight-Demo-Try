@@ -6,7 +6,7 @@
 import type { Feed, FeedHealth, Location } from "@streamline/engine";
 import { addDays, daysBetween, feedHealth } from "@streamline/engine";
 import { v5 as uuidv5 } from "uuid";
-import { FEED_SPECS } from "./rosewood/spec.js";
+import { FEED_SPECS } from "./rosewood/spec";
 
 const NAMESPACE = uuidv5("streamline.coversight/fixtures/harbor", uuidv5.URL);
 export const harborId = (label: string): string => uuidv5(label, NAMESPACE);

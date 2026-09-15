@@ -8,7 +8,7 @@ import type { Adjustment, EvidenceItem, InterventionDecl, InterventionEval, Ledg
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { v7 as uuidv7 } from "uuid";
-import { actions, adjustments, auditEvents, feeds, findings, gmLocationScopes, interventions, ledgerSides, locations, memberships, orgs, pipelineRuns, seedState, verificationResults, type FeedRow } from "./schema.js";
+import { actions, adjustments, auditEvents, feeds, findings, gmLocationScopes, interventions, ledgerSides, locations, memberships, orgs, pipelineRuns, seedState, verificationResults, type FeedRow } from "./schema";
 
 /** Any Postgres-dialect Drizzle database: node-postgres in prod, PGlite in dev and tests. */
 export type StreamlineDb = PgDatabase<PgQueryResultHKT, Record<string, unknown>>;

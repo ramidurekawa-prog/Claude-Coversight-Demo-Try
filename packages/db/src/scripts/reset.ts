@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
-import { connectDatabase, DEFAULT_PGLITE_DIR } from "../connect.js";
-import { seedDemo } from "../seed.js";
+import { connectDatabase, DEFAULT_PGLITE_DIR } from "../connect";
+import { seedDemo } from "../seed";
 
 process.env.STREAMLINE_FAST_HASH ??= "1";
 if (!process.env.DATABASE_URL) rmSync(DEFAULT_PGLITE_DIR, { recursive: true, force: true });

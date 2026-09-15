@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveOverlaps, type OverlapClaim } from "../src/overlap.js";
+import { resolveOverlaps, type OverlapClaim } from "../src/overlap";
 
 const claim = (o: Partial<OverlapClaim> & { id: string }): OverlapClaim => ({ locs: ["oak"], account: "5010", period: "2026-W37", amountCents: 100000, ...o });
 

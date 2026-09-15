@@ -4,11 +4,11 @@
  * is what the synthetic register applies when the demo clock advances; a real
  * register would simply show the change.
  */
-import type { IsoDate } from "./dates.js";
-import type { AppliedChange, InterventionDecl, MeasurementPlan } from "./interventions.js";
-import type { LedgerFinding } from "./ledger.js";
-import type { Location } from "./register.js";
-import { leverMeta } from "./registry.js";
+import type { IsoDate } from "./dates";
+import type { AppliedChange, InterventionDecl, MeasurementPlan } from "./interventions";
+import type { LedgerFinding } from "./ledger";
+import type { Location } from "./register";
+import { leverMeta } from "./registry";
 
 export interface ProposalOptions {
   id: string;

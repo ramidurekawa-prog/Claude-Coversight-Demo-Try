@@ -3,9 +3,9 @@
  * weekly effect series. Structural if the decay interval includes zero;
  * durable if the half-life exceeds 26 weeks; upkeep-dependent under 8.
  */
-import type { IsoDate } from "./dates.js";
-import type { DatedValue } from "./measure.js";
-import { mean, sd, slope, sum } from "./stats.js";
+import type { IsoDate } from "./dates";
+import type { DatedValue } from "./measure";
+import { mean, sd, slope, sum } from "./stats";
 
 export type PersistenceClass = "structural" | "durable" | "upkeep";
 

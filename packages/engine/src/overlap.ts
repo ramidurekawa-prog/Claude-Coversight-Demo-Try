@@ -4,7 +4,7 @@
  * Precedence, in order: explicit human resolution → earliest verified →
  * narrowest scope → strongest method → proportional → unresolved (blocks both).
  */
-import type { IsoDate } from "./dates.js";
+import type { IsoDate } from "./dates";
 
 export interface OverlapClaim {
   id: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { cusumChart, driftOnset, ewmaChart } from "../src/charts.js";
-import { addDays } from "../src/dates.js";
+import { cusumChart, driftOnset, ewmaChart } from "../src/charts";
+import { addDays } from "../src/dates";
 
 // Deterministic noise for tests only (the engine itself has no randomness).
 function lcg(seed: number) {

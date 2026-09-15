@@ -1,7 +1,7 @@
 import { createIdentityRepositories, createRepositories, type StreamlineDb } from "@streamline/db";
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { Auth } from "./auth.js";
+import type { Auth } from "./auth";
 
 export interface AuthUser {
   id: string;

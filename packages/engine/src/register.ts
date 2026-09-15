@@ -3,8 +3,8 @@
  * cents and location-local business dates. The engine reads these rows and
  * nothing else.
  */
-import type { IsoDate } from "./dates.js";
-import type { Cents } from "./money.js";
+import type { IsoDate } from "./dates";
+import type { Cents } from "./money";
 
 export type LocationId = string;
 export type DaypartId = string;

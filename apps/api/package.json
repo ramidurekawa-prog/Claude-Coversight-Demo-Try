@@ -9,7 +9,9 @@
     "build": "tsup",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "STREAMLINE_FAST_HASH=1 STREAMLINE_RESET_ON_START=1 STREAMLINE_PGLITE_DIR=../../packages/db/data/pglite-e2e tsx src/server.ts",
+    "demo": "tsx src/server.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.18",

@@ -4,18 +4,18 @@
  * register through the estimator and the verification service; none of the
  * outcomes, intervals or bookable amounts are written down anywhere.
  */
-import { addDays, daysBetween, type IsoDate } from "./dates.js";
-import { runGuardrails, type GuardrailResult } from "./guardrails.js";
-import { did, itemSeries, reconcileA, serviceInScope, svSeries, toWeekly, type DatedValue, type Estimate, type EstimateOk, type ServiceScope } from "./measure.js";
-import { formatUsd, type Cents } from "./money.js";
-import { decayAt, persistence, type PersistenceResult } from "./persistence.js";
-import type { FeedHealth, ItemDay, Register, Service } from "./register.js";
-import { groupBy, skuById } from "./register.js";
-import type { AutonomyLevel, Lever, MeasurementFamily, VerificationOutcome } from "./registry.js";
-import { VERIFICATION_OUTCOMES } from "./registry.js";
-import type { InterventionState } from "./states.js";
-import { mean, sum } from "./stats.js";
-import { verificationService, type DataQualityVerdict, type ExecutionFidelity, type OverlapStatus, type VerificationResult } from "./verify.js";
+import { addDays, daysBetween, type IsoDate } from "./dates";
+import { runGuardrails, type GuardrailResult } from "./guardrails";
+import { did, itemSeries, reconcileA, serviceInScope, svSeries, toWeekly, type DatedValue, type Estimate, type EstimateOk, type ServiceScope } from "./measure";
+import { formatUsd, type Cents } from "./money";
+import { decayAt, persistence, type PersistenceResult } from "./persistence";
+import type { FeedHealth, ItemDay, Register, Service } from "./register";
+import { groupBy, skuById } from "./register";
+import type { AutonomyLevel, Lever, MeasurementFamily, VerificationOutcome } from "./registry";
+import { VERIFICATION_OUTCOMES } from "./registry";
+import type { InterventionState } from "./states";
+import { mean, sum } from "./stats";
+import { verificationService, type DataQualityVerdict, type ExecutionFidelity, type OverlapStatus, type VerificationResult } from "./verify";
 
 export type MetricKey = "labour_per_cover" | "comps_per_cover" | "cm_per_cover" | "cogs_per_cover" | "net_per_cover" | "ticket_min" | "item_cost_per_unit" | "sku_unit_price" | "sku_cost_per_plate";
 

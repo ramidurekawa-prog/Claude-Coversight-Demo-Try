@@ -7,9 +7,9 @@
  */
 import type { Adjustment, AppliedChange, FeedHealth, InterventionDecl, InterventionEval, LedgerAction, LedgerFinding, LedgerSide, Period, PriorFinding, Register } from "@streamline/engine";
 import { accrualInPeriod, addDays, daysBetween, deriveAdjustments, evaluateIntervention, expireStale, feedHealth, formatMonthLong, monthOf, numberAdjustments, recoverableOf, rollupRegister, runDetectionPass, type UnnumberedAdjustment } from "@streamline/engine";
-import { buildFeeds, generateCanonical, type RosewoodCanonical } from "./generate.js";
-import { ACTIONS, DISPUTE_ON, DISPUTE_TEMPLATE, HISTORICAL_FINDINGS, INTERVENTIONS, INVESTIGATIONS, REJECTED_FINDING, ledgerSideFor } from "./history.js";
-import { FIXTURE, LOCATIONS, ORG } from "./spec.js";
+import { buildFeeds, generateCanonical, type RosewoodCanonical } from "./generate";
+import { ACTIONS, DISPUTE_ON, DISPUTE_TEMPLATE, HISTORICAL_FINDINGS, INTERVENTIONS, INVESTIGATIONS, REJECTED_FINDING, ledgerSideFor } from "./history";
+import { FIXTURE, LOCATIONS, ORG } from "./spec";
 
 export interface BuildOptions {
   /** The demo clock. Default: the fixture's own "today". */

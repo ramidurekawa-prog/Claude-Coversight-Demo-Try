@@ -2,12 +2,12 @@
  * Confidence in eight dimensions — System 14. Never a single badge: each
  * dimension carries its score, the basis that produced it, and what it blocks.
  */
-import type { FindingCore } from "./detectors.js";
-import type { InterventionEval } from "./interventions.js";
-import { formatPct, formatUsd } from "./money.js";
-import type { FeedHealth } from "./register.js";
-import { type ConfidenceDimensionKey, type ConfWord, RECON_STATUS, RUNGS, type ReconStatus } from "./registry.js";
-import { mean } from "./stats.js";
+import type { FindingCore } from "./detectors";
+import type { InterventionEval } from "./interventions";
+import { formatPct, formatUsd } from "./money";
+import type { FeedHealth } from "./register";
+import { type ConfidenceDimensionKey, type ConfWord, RECON_STATUS, RUNGS, type ReconStatus } from "./registry";
+import { mean } from "./stats";
 
 export interface ConfidenceDimension {
   score: number;
