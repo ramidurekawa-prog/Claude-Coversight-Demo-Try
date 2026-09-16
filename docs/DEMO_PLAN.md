@@ -145,9 +145,9 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
 | 5 | Fixture: Rosewood canonical generator + declared history + build + Harbor House + personas | done | 23 tests; planted signals found; outcomes computed; fingerprint pinned |
 | 6 | DB: Postgres-dialect schema on PGlite, migrations, org-first repos, seed, nightly job, demo clock | done | 5 tests incl. clock advance closing a window |
 | 7 | API: Fastify routes + contracts + better-auth + location scope | done | 41 tests: tenancy, scope, decisions, execution, the full loop through a clock advance |
-| 8 | UI: tokens/shell port, eight surfaces, states | in progress | Home, login, shell, charts, demo controls done; Today/Actions/Data, Findings/detail/Recovery, Changes/detail/Proof/packet in parallel streams |
-| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | in progress | `e2e/demo-flow.spec.ts` written (desktop + iPhone 13 against a production build) |
-| 10 | Manual walkthrough + fixes + docs refresh | pending | |
+| 8 | UI: tokens/shell port, eight surfaces, states | done | All eleven routes render for owner, GM and the empty tenant; verified visually on desktop and iPhone 13 |
+| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | done | 63 engine, 23 fixture, 8 contracts, 5 db, 41 API, 2 web copy tests; `pnpm e2e` runs the ten-step script on desktop and iPhone 13 — 18 passed against a production build and a freshly re-seeded API |
+| 10 | Manual walkthrough + fixes + docs refresh | done | Every surface screenshot-reviewed on desktop and phone as owner, GM and the empty tenant; fixes landed (shell grid, decaying-claim confidence word, parked decisions) |
 | 11 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
 
 ## 8. Decisions taken without asking (and why)

@@ -74,13 +74,13 @@ and a freshly re-seeded API) before a rehearsal.
 For each of Home, Today, Profit Recovery, Findings, Finding detail, Actions, Changes, Change detail,
 ROI proof, Proof packet, Data:
 
-- [ ] The headline answers the screen's one question; every number carries its class label.
-- [ ] Empty: sign in as Elena Marsh (Harbor House) — honest empty states, no zeros dressed as results.
+- [x] The headline answers the screen's one question; every number carries its class label (screenshot pass, 16 Sep).
+- [x] Empty: sign in as Elena Marsh (Harbor House) — honest empty states, no zeros dressed as results (A: e2e tenancy test).
 - [ ] Error: stop the API — every screen shows "The API is not reachable" with a retry, not a blank page.
-- [ ] Responsive: 390px and 1280px, no horizontal page scroll; tables scroll inside their container.
-- [ ] Scope: switch All rooms → one room on every screen; figures shrink consistently; the group-level
-      purchasing claim shows a third at each room.
-- [ ] Demo controls: advance the clock and reset from the business-date chip; both say what they did.
+- [x] Responsive: 390px and 1280px, no horizontal page scroll; tables scroll inside their container (A: e2e mobile project).
+- [x] Scope: switch All rooms → one room on every screen; figures shrink consistently; the group-level
+      purchasing claim shows a third at each room (A: API test on per-room apportionment; screens rendered per room).
+- [x] Demo controls: advance the clock and reset from the business-date chip; both say what they did (A: e2e steps 7–8 and the per-project reset).
 
 ## Running it
 

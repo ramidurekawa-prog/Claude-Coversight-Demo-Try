@@ -7,6 +7,16 @@ import { businessDate, signIn } from "./helpers";
  * Runs once per project (desktop, then mobile) against a freshly seeded API.
  */
 test.describe.serial("the demo script", () => {
+  // Every project (desktop, then mobile) starts from the fixture's "today": the owner resets the org.
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await signIn(page, "rose@rosewood.example");
+    const res = await page.request.post("/api/v1/demo/reset", { data: {}, headers: { origin: "http://127.0.0.1:3000" } });
+    expect(res.ok()).toBeTruthy();
+    await ctx.close();
+  });
+
   test("1–2 · Home leads with persistent verified savings; Today ranks by consequence of inaction", async ({ page }) => {
     await signIn(page, "rose@rosewood.example");
     await expect(page.getByText(/still reaching the margin/)).toBeVisible();
@@ -50,8 +60,8 @@ test.describe.serial("the demo script", () => {
     await expect(row).toBeVisible();
     await row.getByRole("button", { name: /Mark done/ }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByRole("textbox").last().fill("Toast approval threshold $1,000 → $25 at Oakland, changed today at 09:14");
-    await dialog.getByRole("button", { name: /Mark done|Done|Submit|Save/ }).last().click();
+    await dialog.locator("textarea").fill("Toast approval threshold $1,000 → $25 at Oakland, changed today at 09:14");
+    await dialog.locator('button[type="submit"]').click();
     await expect(page.getByText(/Window open on IV-\d+/)).toBeVisible({ timeout: 30_000 });
 
     await page.goto("/changes");
@@ -85,10 +95,12 @@ test.describe.serial("the demo script", () => {
     await expect(page.getByText(/Savings ledger/i).first()).toBeVisible();
     await expect(page.getByText(/Reversal/).first()).toBeVisible();
     await expect(page.getByText(/never/i).first()).toBeVisible();
-    const heroProof = await page.locator(".hero-fig").first().textContent();
+    const dollars = (t: string | null) => t?.match(/\$[\d,]+/)?.[0];
+    const heroProof = dollars(await page.locator(".hero-fig").first().textContent());
     await page.goto("/");
-    const heroHome = await page.locator(".hero-fig").first().textContent();
-    expect(heroHome?.replace(/\s+/g, " ").slice(0, 8)).toBe(heroProof?.replace(/\s+/g, " ").slice(0, 8));
+    const heroHome = dollars(await page.locator(".hero-fig").first().textContent());
+    expect(heroHome).toBeDefined();
+    expect(heroHome).toBe(heroProof);
 
     await page.goto("/data");
     await expect(page.getByText(/Reservations/).first()).toBeVisible();
@@ -103,7 +115,7 @@ test.describe("tenancy and personas", () => {
     await page.goto("/findings/F-CMP-OAK-DINNER");
     await expect(page.getByText(/No such record/)).toBeVisible();
     await page.goto("/proof");
-    await expect(page.getByText(/Nothing has been verified yet/i)).toBeVisible();
+    await expect(page.getByText(/Nothing has been verified yet/i).first()).toBeVisible();
   });
 
   test("a GM is scoped to their room and finance may read but not decide", async ({ page }) => {
