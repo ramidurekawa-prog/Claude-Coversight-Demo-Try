@@ -1,0 +1,35 @@
+# Netlify deployment for the Streamline demo.
+#
+# One site hosts everything: the Next.js UI and the API, which runs inside a
+# catch-all route handler (STREAMLINE_EMBEDDED_API=1) because a serverless
+# platform has no second process to proxy to.
+#
+# Set these in Site configuration → Environment variables:
+#   DATABASE_URL           Postgres connection string (use the POOLED one)
+#   BETTER_AUTH_SECRET     any long random string
+#   STREAMLINE_EMBEDDED_API   1
+#   STREAMLINE_SKIP_MIGRATIONS 1   (migrations and seeding run from your machine)
+#   STREAMLINE_PG_POOL_MAX     1   (every warm instance keeps its own pool)
+#
+# If the build UI asks: Base directory = repository root, Package directory =
+# apps/web. Seed the database once before the first visit:
+#   DATABASE_URL='<your pooled url>' pnpm db:seed
+
+[build]
+  command = "pnpm --filter @streamline/web build"
+  publish = "apps/web/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PNPM_FLAGS = "--frozen-lockfile=false"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# The demo clock rebuilds a slice of the register and re-runs the engine, which
+# is the one request that can outlast a default 10s function. Netlify's Pro plan
+# raises the ceiling to 26s; on the free plan, advance in smaller steps.
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["fastify", "better-auth", "@better-auth/drizzle-adapter", "pg", "@electric-sql/pglite"]

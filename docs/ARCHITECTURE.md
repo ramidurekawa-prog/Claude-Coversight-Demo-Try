@@ -135,11 +135,33 @@ POST /api/v1/demo/reset         reseed this org (owner/admin)
 
 ## Auth and tenancy
 
-better-auth with email + password (argon2), invite-only; the seed creates the demo personas with a
+better-auth with email + password (scrypt at OWASP's parameters — argon2's native binary cannot be
+bundled into a serverless function, and this demo deploys to one), invite-only; the seed creates the demo personas with a
 published demo password. A second org ("Harbor House Group", one room, connected nine days ago, no
 findings) is seeded with its own owner so tenant tests are meaningful and every empty state is real:
 repository queries filter by `org_id`, and API tests assert cross-org reads return 404. Personas
 change navigation emphasis and permitted actions (accept/approve/reverse/export), never a number.
+
+## Deployment shapes
+
+The same code runs in two layouts, chosen by one environment variable:
+
+| | `pnpm dev` / `pnpm demo` (two processes) | `STREAMLINE_EMBEDDED_API=1` (one process) |
+| --- | --- | --- |
+| API | `apps/api` serves it on :3001 | the same `buildApp()` is built once per instance inside `apps/web/lib/embedded-api.ts` and driven through `fastify.inject()` — the entry point the API's own tests use |
+| Browser `/api/*` | proxied to :3001 by the catch-all route | handled in-process by that route |
+| Server components | fetch the API over HTTP | call the in-process API directly, so rendering costs no second hop |
+| Database | PGlite files under `packages/db/data/pglite` | `DATABASE_URL` — a serverless filesystem does not persist |
+| Session cookie | first-party via the proxy | first-party by construction, same origin |
+
+The UI is identical in both: pages only ever speak HTTP shapes to `/api/v1/*`. Only the two files
+that *host* the API may import `db`; `apps/web/test/layering.test.ts` enforces that.
+
+Serverless constraints worth knowing: migrations and seeding run from a developer machine against
+`DATABASE_URL` (`STREAMLINE_SKIP_MIGRATIONS=1` on the host, because 250,000 fixture rows do not fit
+in a function invocation), the connection pool is one per instance, and advancing the demo clock —
+which rebuilds a slice of the register and re-runs the engine — is the one request that can approach
+a function timeout. `README.md` carries the Netlify procedure.
 
 ## Engine purity
 

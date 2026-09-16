@@ -21,7 +21,9 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "tailwind-merge": "^3.7.0",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@streamline/api": "workspace:*",
+    "@streamline/db": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",

@@ -37,7 +37,7 @@ e2e is preinstalled in this environment (`@playwright/test` is pinned to 1.56.1 
 | `packages/ui` | Design tokens and primitives (ported from the reference) | No data fetching, no money arithmetic. |
 | `packages/db` | Postgres-dialect Drizzle schema, migrations, org-scoped repositories, seed, PGlite/pg connection | Every repository method takes `orgId` first. A query without a tenant predicate is a bug. Financial rows (verification results, adjustments, audit) are append-only. |
 | `apps/api` | Fastify 5 + better-auth; routes under `/api/v1/*`; the demo clock and the "nightly" job | Threads the org's `as_of` into every engine call. Validates every response against `contracts`. |
-| `apps/web` | Next.js 16 App Router UI; proxies `/api/*` to `apps/api` | Nothing in the web layer computes a dollar. Every figure arrives from the engine carrying its claim class. Never imports `db` or `fixture`. |
+| `apps/web` | Next.js 16 App Router UI; `/api/*` is proxied to `apps/api` in development, or served by the API in-process when `STREAMLINE_EMBEDDED_API=1` (serverless deployment) | Nothing in the web layer computes a dollar. Every figure arrives from the engine carrying its claim class. Only `lib/embedded-api.ts` and the catch-all route may import `@streamline/api`/`db`: they *host* the API, they are not UI. No page, component or other lib file may import `db` or `fixture`. |
 | `e2e` | Playwright demo-flow tests (desktop + mobile) | The demo script in `docs/DEMO_PLAN.md` is executable here. |
 
 ## Non-negotiable rules (from the specification)

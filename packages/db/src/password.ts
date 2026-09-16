@@ -1,15 +1,41 @@
-import { hash, verify, type Options } from "@node-rs/argon2";
+/**
+ * Password hashing for the demo personas.
+ *
+ * scrypt from Node's own crypto, at OWASP's recommended parameters for scrypt
+ * (N = 2^17, r = 8, p = 1).
+ *
+ * Deliberately NOT argon2id, which OWASP prefers: argon2 ships as a native
+ * binary whose platform loader cannot be bundled into a serverless function,
+ * and this demo has to deploy to one. Nothing has ever stored an argon2 hash
+ * here, so there is no migration path to keep; a real deployment that wants
+ * argon2id changes both functions below together and accepts a Node host.
+ */
+import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 
-/** argon2id, OWASP first-recommended parameters (64 MiB, t=3, p=4). */
-const OWASP_ARGON2ID: Options = { memoryCost: 65536, timeCost: 3, parallelism: 4, outputLen: 32, algorithm: 2 };
-/** Tests and the demo seed churn through many hashes; verify() reads the parameters from the hash, so the two profiles interoperate. */
-const FAST_ARGON2ID: Options = { memoryCost: 4096, timeCost: 1, parallelism: 1, outputLen: 32, algorithm: 2 };
+const scrypt = promisify(scryptCb) as (password: string, salt: Buffer, keylen: number, opts: { N: number; r: number; p: number; maxmem: number }) => Promise<Buffer>;
 
-const PROFILE = process.env.NODE_ENV === "test" || process.env.STREAMLINE_FAST_HASH === "1" ? FAST_ARGON2ID : OWASP_ARGON2ID;
+/** OWASP: scrypt with N ≥ 2^17, r = 8, p = 1. maxmem must clear 128 × N × r. */
+const OWASP_SCRYPT = { N: 131072, r: 8, p: 1, maxmem: 192 * 1024 * 1024 };
+/** Tests and the seed churn through many hashes and are not verifying KDF strength. */
+const FAST_SCRYPT = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
-export function hashPassword(password: string): Promise<string> {
-  return hash(password, PROFILE);
+const KEYLEN = 64;
+const profile = () => (process.env.NODE_ENV === "test" || process.env.STREAMLINE_FAST_HASH === "1" ? FAST_SCRYPT : OWASP_SCRYPT);
+
+export async function hashPassword(password: string): Promise<string> {
+  const p = profile();
+  const salt = randomBytes(16);
+  const key = await scrypt(password, salt, KEYLEN, p);
+  return `scrypt$${p.N}$${p.r}$${p.p}$${salt.toString("base64")}$${key.toString("base64")}`;
 }
-export function verifyPassword({ password, hash: stored }: { password: string; hash: string }): Promise<boolean> {
-  return verify(stored, password, PROFILE);
+
+export async function verifyPassword({ password, hash: stored }: { password: string; hash: string }): Promise<boolean> {
+  const [scheme, N, r, p, saltB64, keyB64] = stored.split("$");
+  if (scheme !== "scrypt" || !N || !r || !p || !saltB64 || !keyB64) return false;
+  // The cost parameters come from the stored hash, so a hash made under either
+  // profile verifies under the other.
+  const expected = Buffer.from(keyB64, "base64");
+  const key = await scrypt(password, Buffer.from(saltB64, "base64"), expected.length, { N: Number(N), r: Number(r), p: Number(p), maxmem: 192 * 1024 * 1024 });
+  return key.length === expected.length && timingSafeEqual(key, expected);
 }

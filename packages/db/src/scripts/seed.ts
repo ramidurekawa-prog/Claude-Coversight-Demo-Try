@@ -1,7 +1,9 @@
 import { connectDatabase } from "../connect";
 import { seedDemo } from "../seed";
 
-process.env.STREAMLINE_FAST_HASH ??= "1";
+// Local PGlite is re-seeded constantly and its passwords are published with the
+// fixture; a real server gets the full-strength profile.
+if (!process.env.DATABASE_URL) process.env.STREAMLINE_FAST_HASH ??= "1";
 const conn = await connectDatabase();
 const t0 = Date.now();
 const r = await seedDemo(conn.db, { force: process.argv.includes("--force") });

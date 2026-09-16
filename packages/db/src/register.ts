@@ -8,7 +8,15 @@ import type { PgTable } from "drizzle-orm/pg-core";
 import type { StreamlineDb } from "./repositories";
 import { dayparts, invoiceLines, itemDays, locations, menuItems, reservationDays, roles, services, shifts, skus } from "./schema";
 
-/** Stay well under Postgres' 65,535 bind-parameter limit (widest table ≈ 18 columns). */
+/**
+ * Rows per INSERT. Stay well under Postgres' 65,535 bind-parameter limit (the
+ * widest table is about 18 columns).
+ *
+ * Do not raise this: PGlite's WebAssembly build rejects a statement of roughly
+ * 36,000 parameters, and it does so in a way that leaves the transaction's
+ * earlier rows behind instead of rolling them back — a seed that half-succeeds.
+ * The round trips this costs are only paid by the one-time seed.
+ */
 const CHUNK = 500;
 
 export async function insertChunked<T extends PgTable>(db: StreamlineDb, table: T, rows: T["$inferInsert"][]): Promise<void> {

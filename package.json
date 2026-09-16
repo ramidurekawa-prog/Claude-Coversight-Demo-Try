@@ -39,7 +39,6 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@node-rs/argon2",
       "esbuild",
       "sharp",
       "@tailwindcss/oxide",

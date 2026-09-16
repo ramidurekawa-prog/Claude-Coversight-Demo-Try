@@ -115,6 +115,7 @@ export function buildApp({ logger = false, db, dbPing, authConfig }: BuildAppOpt
     secret: authConfig?.secret ?? "insecure-dev-only-secret-change-me",
     baseURL: authConfig?.baseURL ?? "http://localhost:3001",
     appBaseUrl: authConfig?.appBaseUrl ?? "http://localhost:3000",
+    extraTrustedOrigins: authConfig?.extraTrustedOrigins ?? [],
   });
   app.decorate("auth", auth);
   mountAuth(app, auth);
