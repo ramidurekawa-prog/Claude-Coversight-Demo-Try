@@ -29,6 +29,8 @@ export interface BuildAppOptions {
   db?: StreamlineDb;
   dbPing?: () => Promise<void>;
   authConfig?: Partial<AuthConfig>;
+  /** How this app is being served, for the health diagnosis. */
+  deployment?: "embedded" | "process";
 }
 
 /** Validate a payload against its contract AFTER a JSON round-trip (Infinity → null, Money → {cents, klass}). */
@@ -80,7 +82,7 @@ function decisionsFrom(state: FindingState): FindingState[] {
   return edges;
 }
 
-export function buildApp({ logger = false, db, dbPing, authConfig }: BuildAppOptions = {}) {
+export function buildApp({ logger = false, db, dbPing, authConfig, deployment = "process" }: BuildAppOptions = {}) {
   const app = Fastify({ logger }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
 
@@ -106,7 +108,33 @@ export function buildApp({ logger = false, db, dbPing, authConfig }: BuildAppOpt
         dbState = "unavailable";
       }
     } else if (db) dbState = "ok";
-    return contract(reply, HealthResponse, { ok: true, version: API_VERSION, db: dbState });
+
+    // The three states a deployment actually gets stuck in: no connection
+    // string, a reachable database with no tables (migrations skipped and never
+    // run), and tables with no rows (never seeded). Each one is named here
+    // because the page that fails cannot say it.
+    const configured = !!process.env.DATABASE_URL;
+    let migrated = false;
+    let orgs: Array<{ fixtureVersion: string | null; asOf: string }> = [];
+    if (db && dbState === "ok") {
+      try {
+        orgs = await createRepositories(db).orgs.list();
+        migrated = true;
+      } catch {
+        migrated = false;
+      }
+    }
+    const diagnosis = !configured && deployment === "embedded" ? "DATABASE_URL is not set. A host that runs this app as a function cannot keep PGlite's data file, so a Postgres connection string is required. Set DATABASE_URL to the pooled one, then seed it once from your machine: DATABASE_URL='...' pnpm db:seed" : dbState !== "ok" ? "The database is not reachable. Check DATABASE_URL, and that it is the pooled connection string." : !migrated ? "The database is reachable but has no tables. Run the migrations and the seed against it once: DATABASE_URL='...' pnpm db:seed" : !orgs.length ? "The tables exist but hold no data. Seed it once: DATABASE_URL='...' pnpm db:seed" : undefined;
+
+    return contract(reply, HealthResponse, {
+      ok: true,
+      version: API_VERSION,
+      db: dbState,
+      mode: deployment,
+      origin: authConfig?.appBaseUrl ?? null,
+      database: { configured, kind: configured ? "postgres" : "pglite", reachable: dbState === "ok", migrated, orgs: orgs.length, fixtureVersion: orgs[0]?.fixtureVersion ?? null, asOf: orgs[0]?.asOf ?? null },
+      ...(diagnosis ? { diagnosis } : {}),
+    });
   });
 
   if (!db) return app;

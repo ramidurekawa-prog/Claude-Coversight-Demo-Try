@@ -8,3 +8,10 @@ export async function freshDb(): Promise<StreamlineDb> {
   onTestFinished(() => conn.close());
   return conn.db;
 }
+
+/** An empty in-memory Postgres with NO migrations applied: the state of a hosted database nobody has seeded yet. */
+export async function unmigratedDb(): Promise<StreamlineDb> {
+  const conn = await connectDatabase({ dataDir: "memory", url: undefined, migrate: false });
+  onTestFinished(() => conn.close());
+  return conn.db;
+}

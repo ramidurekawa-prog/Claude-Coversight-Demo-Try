@@ -76,7 +76,9 @@ ROI proof, Proof packet, Data:
 
 - [x] The headline answers the screen's one question; every number carries its class label (screenshot pass, 16 Sep).
 - [x] Empty: sign in as Elena Marsh (Harbor House) — honest empty states, no zeros dressed as results (A: e2e tenancy test).
-- [ ] Error: stop the API — every screen shows "The API is not reachable" with a retry, not a blank page.
+- [x] Error: stop the API — every screen shows "The API is not reachable" with a retry, not a blank page
+      (M, 16 Sep; the boundary above the app shell was missing, so this fell through to Next's own
+      unstyled "A server error occurred" — see the deployed section below).
 - [x] Responsive: 390px and 1280px, no horizontal page scroll; tables scroll inside their container (A: e2e mobile project).
 - [x] Scope: switch All rooms → one room on every screen; figures shrink consistently; the group-level
       purchasing claim shows a third at each room (A: API test on per-room apportionment; screens rendered per room).
@@ -89,6 +91,29 @@ ROI proof, Proof packet, Data:
 - `pnpm dev` — hot-reloading development servers. In some sandboxed environments the dev server's
   HMR websocket is blocked and client-side interactivity does not attach; use `pnpm demo` there.
 - `pnpm db:reset` — delete the PGlite directory and re-seed. Or use "Reset the demo" in the product.
+
+## Deployed (one process, hosted Postgres)
+
+The demo can be shown from a Netlify site instead of a laptop, which is a different code path: the
+API is hosted in-process and the database is a real Postgres. What was verified, and how:
+
+- [x] The seed runs against a real Postgres (`DATABASE_URL='postgres://…' pnpm db:seed`, 7.5s) and the
+      register fingerprint matches the PGlite one — the fixture is not dialect-dependent.
+- [x] The built app with the serverless host detected (`NETLIFY=true`) and a real Postgres serves
+      health, sign-in and all eleven surfaces (200, 45–290ms).
+- [x] Each stuck state answers with its remedy on `/api/v1/health`: no `DATABASE_URL`, unreachable,
+      reachable but unmigrated, migrated but unseeded (A: `apps/api/test/health.test.ts`, one case
+      each, response parsed against its contract).
+- [x] TLS policy for a hosted database: verified for any remote host, off only for a local one or an
+      explicit `sslmode=disable` (A: `packages/db/test/connect.test.ts`).
+- [x] A broken deployment explains itself on the page, not only in the log: the boundary above the app
+      shell asks `/api/v1/health` and shows its `diagnosis` ("DATABASE_URL is not set … pnpm db:seed"),
+      with a retry (M, browser-rendered against a server started with no `DATABASE_URL`).
+- [x] The diagnosis is reachable in the state it diagnoses: when the boot fails, the API is served
+      without a database so health still answers 200 and every other route answers 503 with the
+      reason, where both used to be an empty 500.
+- [ ] A real Netlify deployment end to end — the founder's site is the only place this can be
+      confirmed; everything it depends on is verified above.
 
 ## Known limitations to say out loud in a demo
 

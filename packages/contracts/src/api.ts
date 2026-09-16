@@ -162,10 +162,34 @@ export type Versions = z.infer<typeof Versions>;
 
 /* ---------- health / me --------------------------------------------------- */
 
+/**
+ * Health doubles as the deployment's own diagnosis: it is unauthenticated, so it
+ * answers even when sign-in cannot, and it names what is wrong rather than
+ * leaving a bare 500 behind. It carries no secret — whether a variable is set,
+ * never its value.
+ */
 export const HealthResponse = z.object({
   ok: z.literal(true),
   version: z.string(),
   db: z.enum(["ok", "unavailable"]),
+  /** How the API is being served: in this process, or behind a proxy to its own. */
+  mode: z.enum(["embedded", "process"]).optional(),
+  /** The origin this deployment believes it is on; a mismatch refuses sign-in. */
+  origin: z.string().nullish(),
+  database: z
+    .object({
+      configured: z.boolean(),
+      kind: z.enum(["postgres", "pglite"]),
+      reachable: z.boolean(),
+      /** False when the tables are absent: migrations were skipped and never run. */
+      migrated: z.boolean(),
+      orgs: z.number().int(),
+      fixtureVersion: z.string().nullable(),
+      asOf: IsoDate.nullable(),
+    })
+    .optional(),
+  /** Present only when something is wrong, and says what to do about it. */
+  diagnosis: z.string().optional(),
 });
 export type HealthResponse = z.infer<typeof HealthResponse>;
 

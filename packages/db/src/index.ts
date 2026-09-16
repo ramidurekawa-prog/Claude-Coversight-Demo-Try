@@ -5,4 +5,4 @@ export * from "./password";
 export * from "./register";
 export * from "./seed";
 export * from "./nightly";
-export { connectDatabase, DEFAULT_PGLITE_DIR, MIGRATIONS_FOLDER, type Connection, type ConnectOptions } from "./connect";
+export { connectDatabase, pgSslOption, DEFAULT_PGLITE_DIR, MIGRATIONS_FOLDER, type Connection, type ConnectOptions } from "./connect";

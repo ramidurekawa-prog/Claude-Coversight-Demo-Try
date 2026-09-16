@@ -40,6 +40,32 @@ export function publicOrigin(): string {
 }
 
 let instance: Promise<ApiApp> | null = null;
+let degraded: Promise<ApiApp> | null = null;
+let lastBootFailure = "The API could not start.";
+
+/**
+ * The same app without a database, served only when the real boot fails.
+ *
+ * Without this, a deployment that cannot reach its database answered every
+ * request — including /api/v1/health, the one route whose job is to say what is
+ * wrong — with an empty 500, because the failure happened before any route
+ * existed. The health route needs no database to report that there isn't one,
+ * so it is built and served, and everything else answers 503 with the reason
+ * rather than Fastify's "Route not found".
+ */
+function degradedApp(reason: string): Promise<ApiApp> {
+  // The app is built once, but the reason is read per request: the reason a boot
+  // fails can change (a connection string appears, the database is still
+  // unreachable) and a cached sentence would then be the wrong one.
+  lastBootFailure = reason;
+  degraded ??= (async () => {
+    const app = buildApp({ deployment: "embedded" });
+    app.setNotFoundHandler((_req, reply) => reply.code(503).send({ error: "unavailable", message: lastBootFailure }));
+    await app.ready();
+    return app;
+  })();
+  return degraded;
+}
 
 function start(): Promise<ApiApp> {
   return (async () => {
@@ -54,6 +80,7 @@ function start(): Promise<ApiApp> {
     const conn = await connectDatabase({ poolMax: Number(process.env.STREAMLINE_PG_POOL_MAX ?? 1) });
     const origin = publicOrigin();
     const app = buildApp({
+      deployment: "embedded",
       db: conn.db,
       dbPing: conn.ping,
       authConfig: {
@@ -71,15 +98,18 @@ function start(): Promise<ApiApp> {
   })();
 }
 
-/** Reused across warm invocations; a failed boot is not cached. */
+/**
+ * Reused across warm invocations. A failed boot is not cached — the next
+ * request tries again, because a database that was unreachable for a moment
+ * must not pin the instance into diagnostic mode — and until it succeeds the
+ * request is answered by an app that can explain the failure.
+ */
 function getApp(): Promise<ApiApp> {
-  if (!instance) {
-    instance = start().catch((err: unknown) => {
-      instance = null;
-      throw err;
-    });
-  }
-  return instance;
+  instance ??= start().catch((err: unknown) => {
+    instance = null;
+    throw err;
+  });
+  return instance.catch((err: unknown) => degradedApp(err instanceof Error ? err.message : String(err)));
 }
 
 const HOP_BY_HOP = new Set(["content-length", "content-encoding", "transfer-encoding", "connection", "keep-alive"]);

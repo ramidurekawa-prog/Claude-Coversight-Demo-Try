@@ -52,11 +52,30 @@ seconds on the free plan (26 on Pro), so advance in smaller steps there. And
 "Reset the demo" rewrites the whole register, which will exceed any function
 limit: reset by re-running `pnpm db:seed` against the database instead.
 
-**If a deployed page shows a bare server error,** read the function log rather
-than the page: a production Next.js build strips the reason on its way to the
-browser, and the server log carries it in full, prefixed `[streamline]`. On
-Netlify that is Deploys → the deploy → Functions, or the site's Logs tab. A
-missing `DATABASE_URL` and an unreachable API each say so there by name.
+**If a deployed page shows a bare server error,** open `/api/v1/health` on the
+site. It needs no session, holds no secrets, and diagnoses the deployment:
+
+```json
+{ "ok": true, "db": "unavailable", "mode": "embedded",
+  "database": { "configured": true, "reachable": false, "migrated": false, "orgs": 0 },
+  "diagnosis": "The database is not reachable. Check DATABASE_URL, and that it is the pooled connection string." }
+```
+
+`diagnosis` is present only when something is wrong, and names the remedy. The
+four states a deployment gets stuck in are no `DATABASE_URL`, a database that
+cannot be reached, one with no tables (migrations skipped and never run), and
+one with tables but no rows (never seeded) — the last two are both fixed by
+running `DATABASE_URL='<pooled url>' pnpm db:seed` once.
+
+The function log carries the same reasons in full, prefixed `[streamline]`,
+which is where to look if health itself does not answer: a production Next.js
+build strips a server error's message on its way to the browser. On Netlify
+that is Deploys → the deploy → Functions, or the site's Logs tab.
+
+A remote database is connected over TLS with its certificate verified, whether
+or not the connection string says `sslmode=require`. A provider using its own
+certificate authority needs `sslmode=no-verify` in the URL, or
+`STREAMLINE_PG_SSL_NO_VERIFY=1`; nothing drops verification on its own.
 
 To verify the deployed shape locally, with no Netlify involved:
 

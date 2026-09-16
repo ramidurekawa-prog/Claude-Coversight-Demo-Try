@@ -146,9 +146,11 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
 | 6 | DB: Postgres-dialect schema on PGlite, migrations, org-first repos, seed, nightly job, demo clock | done | 5 tests incl. clock advance closing a window |
 | 7 | API: Fastify routes + contracts + better-auth + location scope | done | 41 tests: tenancy, scope, decisions, execution, the full loop through a clock advance |
 | 8 | UI: tokens/shell port, eight surfaces, states | done | All eleven routes render for owner, GM and the empty tenant; verified visually on desktop and iPhone 13 |
-| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | done | 63 engine, 23 fixture, 8 contracts, 5 db, 41 API, 2 web copy tests; `pnpm e2e` runs the ten-step script on desktop and iPhone 13 — 18 passed against a production build and a freshly re-seeded API |
+| 9 | Tests: unit, API, consistency, tenant, e2e demo flow, responsive | done | 63 engine, 23 fixture, 8 contracts, 10 db, 46 API, 5 web (copy, layering, host) tests; `pnpm e2e` runs the ten-step script on desktop and iPhone 13 — 18 passed against a production build and a freshly re-seeded API |
 | 10 | Manual walkthrough + fixes + docs refresh | done | Every surface screenshot-reviewed on desktop and phone as owner, GM and the empty tenant; fixes landed (shell grid, decaying-claim confidence word, parked decisions) |
-| 11 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
+| 11 | Deployable from one Netlify site: API in-process, hosted Postgres | done | Host-detected, verified locally against a real Postgres: seed 7.5s, every surface 115–216ms |
+| 12 | A broken deployment explains itself | done | `/api/v1/health` diagnoses the four stuck states and is served even when the boot fails; the boundary above the app shell, and sign-in, show its remedy instead of "a server error occurred". 12 new tests |
+| 13 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
 
 ## 8. Decisions taken without asking (and why)
 

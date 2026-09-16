@@ -165,6 +165,21 @@ unexplained server error. `STREAMLINE_EMBEDDED_API` still overrides (1 embed, 0 
 configuration failures that cannot be recovered from — no `DATABASE_URL` on a serverless host, an
 unreachable API process — are written to the server log prefixed `[streamline]`.
 
+`GET /api/v1/health` is the deployment's self-diagnosis, and the only route that answers without a
+session. It reports the mode, the origin the app believes it is on, and whether the database is
+configured, reachable, migrated and seeded; when any of those is wrong it adds a `diagnosis`
+sentence naming the remedy. It holds no secrets — the connection string is never echoed, only
+whether one exists. It exists because the operator cannot read the server log of a site that will
+not load, and "a server error occurred" is the whole of what the browser is told.
+`apps/api/test/health.test.ts` pins one case per stuck state, and parses the response against its
+contract, so the page that explains a failure cannot itself fail contract validation.
+
+A remote `DATABASE_URL` is connected over TLS with the certificate verified, whether or not the
+string carries `sslmode=require` — a provider that requires TLS does not always say so in the URL it
+hands you, and the alternative is a connection that either fails with a `pg_hba` error or succeeds
+in the clear. `sslmode=disable` and `sslmode=no-verify` (or `STREAMLINE_PG_SSL_NO_VERIFY=1`) are the
+only ways down from that, and both are explicit; `packages/db/test/connect.test.ts` pins the policy.
+
 Serverless constraints worth knowing: migrations and seeding run from a developer machine against
 `DATABASE_URL` (`STREAMLINE_SKIP_MIGRATIONS=1` on the host, because 250,000 fixture rows do not fit
 in a function invocation), the connection pool is one per instance, and advancing the demo clock —

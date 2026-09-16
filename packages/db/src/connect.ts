@@ -19,6 +19,38 @@ import pg from "pg";
 import type { StreamlineDb } from "./repositories";
 import * as schema from "./schema";
 
+/** Hosts where a plaintext connection stays inside the machine. */
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", ""]);
+
+/**
+ * Whether to encrypt the connection, and whether to verify the certificate.
+ *
+ * Every hosted Postgres (Neon, Supabase, RDS) is reached across a network, so
+ * TLS is the default for any non-local host — keying it off `sslmode=require`
+ * appearing in the URL was fragile, because a provider that requires TLS does
+ * not always put that parameter in the string it hands you, and the connection
+ * then either fails with a pg_hba error or succeeds in the clear.
+ *
+ * libpq's own opt-outs are honoured, and only the explicit ones:
+ * `sslmode=disable` turns encryption off, `sslmode=no-verify` (or
+ * STREAMLINE_PG_SSL_NO_VERIFY=1) keeps encryption but accepts a certificate
+ * from a provider's private CA. Verification is never dropped silently.
+ */
+export function pgSslOption(url: string): { ssl?: { rejectUnauthorized: boolean } | false } {
+  const mode = /\bsslmode=([a-z-]+)/.exec(url)?.[1];
+  if (mode === "disable") return { ssl: false };
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    /* an unparseable string is the driver's error to report, not ours */
+  }
+  if (!mode && LOCAL_HOSTS.has(host)) return {};
+  if (LOCAL_HOSTS.has(host) && (mode === "prefer" || mode === "allow")) return {};
+  const verify = mode !== "no-verify" && process.env.STREAMLINE_PG_SSL_NO_VERIFY !== "1";
+  return { ssl: { rejectUnauthorized: verify } };
+}
+
 // Joined rather than written as new URL("../x", import.meta.url): these are
 // runtime paths, and a bundler reads that form as a static asset reference and
 // fails the build looking for a module.
@@ -48,7 +80,7 @@ export async function connectDatabase(opts: ConnectOptions = {}): Promise<Connec
   const url = opts.url ?? process.env.DATABASE_URL;
   const shouldMigrate = opts.migrate ?? process.env.STREAMLINE_SKIP_MIGRATIONS !== "1";
   if (url) {
-    const pool = new pg.Pool({ connectionString: url, max: opts.poolMax ?? Number(process.env.STREAMLINE_PG_POOL_MAX ?? 10), ...(/\bsslmode=require\b/.test(url) ? { ssl: { rejectUnauthorized: true } } : {}) });
+    const pool = new pg.Pool({ connectionString: url, max: opts.poolMax ?? Number(process.env.STREAMLINE_PG_POOL_MAX ?? 10), ...pgSslOption(url) });
     const db = drizzleNodePg(pool, { schema });
     if (shouldMigrate) await migrateNodePg(db, { migrationsFolder: MIGRATIONS_FOLDER });
     return {

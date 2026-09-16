@@ -3,6 +3,7 @@
 import { Button } from "@streamline/ui";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { fetchDiagnosis } from "../../components/failure";
 
 const PERSONAS = [
   { email: "rose@rosewood.example", name: "Rose Jorge", title: "Owner · Rosewood Group", question: "Is this business healthy, and is this worth keeping?", role: "owner" },
@@ -29,7 +30,11 @@ export function LoginForm() {
       const res = await fetch("/api/v1/auth/sign-in/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { message?: string } | null;
-        setError(body?.message ?? `Sign-in failed (${res.status}).`);
+        // A 5xx here is the deployment's fault, not the password's, and better-auth
+        // answers an unmigrated database with an empty body — so ask health, which
+        // knows whether the database is missing, unmigrated or unseeded.
+        const diagnosis = res.status >= 500 ? (await fetchDiagnosis()).diagnosis : undefined;
+        setError(diagnosis ?? body?.message ?? `Sign-in failed (${res.status}).`);
         return;
       }
       router.push("/");
