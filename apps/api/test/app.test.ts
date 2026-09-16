@@ -129,6 +129,16 @@ describe("api", () => {
     expect((await post(app, rose, "/api/v1/findings/F-CMP-OAK-DINNER/decide", { decision: "accept" })).status).toBe(409);
     // A blocked finding cannot be accepted.
     expect((await post(app, rose, "/api/v1/findings/F-TKT-ALA-DINNER/decide", { decision: "accept" })).status).toBe(409);
+    // A decision can be parked pending an external answer, and resumed from there.
+    const parked = await post<DecideFindingResponse>(app, rose, "/api/v1/findings/F-PRC-OAK-M01/decide", { decision: "investigate", reason: "Checking the recipe cost against the last invoice before repricing." });
+    expect(parked.status).toBe(200);
+    expect(parked.body.finding.state).toBe("investigating");
+    const parkedDetail = await get<FindingDetailResponse>(app, rose, "/api/v1/findings/F-PRC-OAK-M01");
+    expect(parkedDetail.body.allowedTransitions).toContain("accepted");
+    const resumed = await post<DecideFindingResponse>(app, rose, "/api/v1/findings/F-PRC-OAK-M01/decide", { decision: "accept", dueOn: "2026-09-22" });
+    expect(resumed.status).toBe(200);
+    expect(resumed.body.finding.state).toBe("converted");
+    expect(resumed.body.intervention?.id).toBe("IV-12");
     // A rejection needs a code and a reason, and is remembered.
     const rej = await post<DecideFindingResponse>(app, rose, "/api/v1/findings/F-MIX-ALA/decide", { decision: "reject", code: "not_worth_effort", reason: "Menu reprint is due in November anyway." });
     expect(rej.status).toBe(200);

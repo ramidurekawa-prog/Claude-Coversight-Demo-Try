@@ -25,3 +25,15 @@ describe("persistence (G12)", () => {
     expect(decayAt("upkeep", 4, 4)).toBeCloseTo(0.5, 6);
   });
 });
+
+describe("confidence never calls a decaying claim persistent", () => {
+  it("caps the persistence dimension while the value is leaving", async () => {
+    const { confidenceWord, interventionConfidence } = await import("../src/confidence");
+    const base = { dataQuality: { pass: true, detail: "ok" }, estimate: { point: 5000, mde: 2000, n: { Tpre: 8, Tpost: 4, Cpre: 8, Cpost: 4 }, placebo: { ok: true, pass: true }, preFit: 0.8 }, plan: { rung: 2, windowDays: 28, unit: "week", comparison: "peers" }, executionFidelity: "complete", evidence: [{ type: "x", detail: "y", resolved: true }], guardrailResults: [{ id: "rating", label: "Rating", observed: 0, passed: true, observedLabel: "", thresholdLabel: "" }] };
+    const holding = interventionConfidence({ ...base, persistence: { status: "holding", checks: 5, elapsedWeeks: 20 } } as never, null);
+    const decaying = interventionConfidence({ ...base, persistence: { status: "decaying", checks: 5, elapsedWeeks: 20 } } as never, null);
+    expect(confidenceWord(holding)).toBe("Persistent");
+    expect(confidenceWord(decaying)).not.toBe("Persistent");
+    expect(decaying.persistence.score).toBeLessThan(0.5);
+  });
+});

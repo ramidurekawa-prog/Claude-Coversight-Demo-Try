@@ -31,4 +31,8 @@ describe("finding state machine (System 8)", () => {
     expect(canFindingTransition("detected", "accepted").ok).toBe(false);
     expect(canFindingTransition("rejected", "accepted").ok).toBe(false);
   });
+  it("a decision can be parked pending an external answer, and resumed", () => {
+    expect(canFindingTransition("awaiting_decision", "investigating").ok).toBe(true);
+    expect(canFindingTransition("investigating", "awaiting_decision").ok).toBe(true);
+  });
 });

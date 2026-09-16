@@ -56,8 +56,10 @@ export function interventionConfidence(iv: InterventionEval, recon?: { status: R
     comparability: { score: e ? Math.max(0, Math.min(1, e.preFit + 0.2)) : 0, basis: e ? `Pre-period fit r = ${e.preFit.toFixed(2)} across ${e.n.Tpre} baseline observations. ${iv.plan.comparison}` : "—", blocks: "Downgrades to verified with limitations" },
     guardrail: { score: grDef ? grObs / grDef : 0, basis: `${grObs} of ${grDef} guardrails observed over the same window. ${iv.guardrailResults.filter((g) => !g.passed).length} breached.`, blocks: "A missing guardrail is a failure, not a pass" },
     persistence: {
-      score: iv.persistence ? Math.min(1, iv.persistence.checks / 4) : 0,
-      basis: iv.persistence ? `${iv.persistence.checks} persistence check${iv.persistence.checks === 1 ? "" : "s"} passed over ${iv.persistence.elapsedWeeks} weeks. ${iv.persistence.note ?? ""}` : "Not yet assessed.",
+      // A decaying claim has failed its most recent check: the checks it passed earlier do not
+      // make it persistent now, so the word can never say so while the value is leaving.
+      score: iv.persistence ? (iv.persistence.status === "decaying" ? Math.min(0.3, iv.persistence.checks / 8) : Math.min(1, iv.persistence.checks / 4)) : 0,
+      basis: iv.persistence ? `${iv.persistence.checks} persistence check${iv.persistence.checks === 1 ? "" : "s"} passed over ${iv.persistence.elapsedWeeks} weeks${iv.persistence.status === "decaying" ? " — the latest check found the effect decaying" : ""}. ${iv.persistence.note ?? ""}` : "Not yet assessed.",
       blocks: "Governs annualisation eligibility",
     },
     reconciliation: {

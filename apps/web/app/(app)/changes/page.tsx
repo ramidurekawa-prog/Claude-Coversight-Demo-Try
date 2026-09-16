@@ -48,10 +48,10 @@ function MoneyLine({ iv }: { iv: InterventionSummary }) {
       <div className="ch-row-money">
         <span className="mono tone-book">bookable {formatUsd(iv.bookableCents)}/wk</span>
         <Pill tone="book">Bookable</Pill>
-        <span className="muted">·</span>
+        <span className="muted ch-sep">·</span>
         <span className="mono tone-book">realized to date {formatUsd(iv.realizedCents)}</span>
         <Pill tone="book">Realized</Pill>
-        <span className="muted">·</span>
+        <span className="muted ch-sep">·</span>
         <span className="small">{iv.persistenceStatus ? `${PERSISTENCE_STATUS_LABEL[iv.persistenceStatus].toLowerCase()}${iv.persistenceStatus === "decaying" ? " — an upkeep action is on the plan" : ""}` : "persistence not yet assessed"}</span>
       </div>
     );

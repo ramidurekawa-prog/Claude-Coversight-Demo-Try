@@ -28,7 +28,7 @@ export interface StateSpec {
 
 export const FINDING_STATES: Record<FindingState, StateSpec> = {
   detected: { label: "Detected", meaning: "A detector fired and the finding exists.", setBy: "Automatic", exit: "Ages out at the expiry date if nothing happens.", terminal: false },
-  investigating: { label: "Under investigation", meaning: "A diagnostic pass is running or a human is looking.", setBy: "Agent or operator", exit: "Must resolve to qualified or one of the endings.", terminal: false },
+  investigating: { label: "Under investigation", meaning: "A diagnostic pass is running, or a human has parked the decision while the world answers.", setBy: "Agent or operator", exit: "Resolves back to a decision, to qualified, or to one of the endings.", terminal: false },
   data_insufficient: { label: "Data insufficient", meaning: "Evidence is below the threshold required to size it honestly.", setBy: "System", exit: "Terminal until the data gap is closed; re-detection creates a new finding.", terminal: true },
   qualified: { label: "Qualified", meaning: "It passed data, feasibility, recoverability and overlap tests.", setBy: "System, deterministic", exit: "The first state at which a recoverable figure may be shown.", terminal: false },
   awaiting_decision: { label: "Awaiting decision", meaning: "Presented to a human with a recommendation.", setBy: "System", exit: "Expires if no decision is made inside the window.", terminal: false },
@@ -42,9 +42,12 @@ export const FINDING_STATES: Record<FindingState, StateSpec> = {
 
 export const FINDING_TRANSITIONS: Record<FindingState, FindingState[]> = {
   detected: ["investigating", "qualified", "data_insufficient", "invalidated", "expired", "superseded", "awaiting_decision"],
-  investigating: ["qualified", "data_insufficient", "invalidated", "superseded"],
+  // A decision can be parked pending an external answer (a vendor re-quote, a corrected
+  // reading) and later resume where it left off — the only reason "investigating" is
+  // reachable from, and returns to, awaiting_decision rather than only from "detected".
+  investigating: ["qualified", "awaiting_decision", "data_insufficient", "invalidated", "superseded"],
   qualified: ["awaiting_decision", "superseded", "invalidated", "expired"],
-  awaiting_decision: ["accepted", "rejected", "expired", "superseded", "invalidated"],
+  awaiting_decision: ["accepted", "rejected", "investigating", "expired", "superseded", "invalidated"],
   accepted: ["converted", "awaiting_decision"],
   converted: [],
   rejected: [],

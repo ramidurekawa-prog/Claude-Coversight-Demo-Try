@@ -181,7 +181,7 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
                       <td>
                         <Pill tone={adjustmentTone(a.kind)}>{a.kind}</Pill>
                       </td>
-                      <td>
+                      <td style={{ minWidth: 220 }}>
                         <Link href={withScope(`/changes/${a.interventionId}`, scope)}>{a.title}</Link>
                         <div className="xs">{roomLabel(a.loc, me.locations)}</div>
                       </td>
@@ -196,7 +196,7 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
                       </td>
                       <td style={{ whiteSpace: "nowrap" }}>{formatDate(a.on)}</td>
                       <td>{a.by}</td>
-                      <td className="small" style={{ minWidth: 260 }}>
+                      <td className="small" style={{ minWidth: 240 }}>
                         {a.reason}
                       </td>
                     </tr>

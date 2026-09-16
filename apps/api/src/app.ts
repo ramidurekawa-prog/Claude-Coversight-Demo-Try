@@ -66,6 +66,20 @@ function findingPath(from: FindingState, to: FindingState): FindingState[] {
   return steps;
 }
 
+/** The decisions a human may take from this state: the table's own edges, plus "accepted" wherever a legal path to converted exists. */
+function decisionsFrom(state: FindingState): FindingState[] {
+  const edges = [...(FINDING_TRANSITIONS[state] ?? [])];
+  if (!edges.includes("accepted") && state !== "converted" && !FINDING_STATES[state].terminal) {
+    try {
+      findingPath(state, "converted");
+      edges.push("accepted");
+    } catch {
+      /* no legal path */
+    }
+  }
+  return edges;
+}
+
 export function buildApp({ logger = false, db, dbPing, authConfig }: BuildAppOptions = {}) {
   const app = Fastify({ logger }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
@@ -209,7 +223,7 @@ export function buildApp({ logger = false, db, dbPing, authConfig }: BuildAppOpt
       proposal: proposal ? plainProposal({ plain: f.plain, recoverableCents: f.recoverableCents, guardrails: proposal.plan.guardrails, windowDays: proposal.plan.windowDays, comparison: proposal.plan.comparison }) : iv?.hypothesis ?? f.plain,
       overlapWith: f.overlapRefs.map((r) => ctx.findings.find((x) => x.id === r.id)).filter((x): x is LedgerFinding => !!x).map((x) => findingSummary(x, ctx.feeds)),
       intervention: iv ? interventionSummary(iv, ctx.ledgerSides[iv.id]) : null,
-      allowedTransitions: FINDING_TRANSITIONS[f.state] ?? [],
+      allowedTransitions: decisionsFrom(f.state),
       audit: audit.map(auditEvent),
     });
   });

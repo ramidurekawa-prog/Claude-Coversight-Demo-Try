@@ -42,7 +42,7 @@ export function MintTable({ iv, estimate, bookableCents, compact = false }: { iv
             <td className="r">
               t {two(estimate.tcrit)} × {formatUsd(estimate.se)}
             </td>
-            {!compact && <td className="muted">One-sided 95%, {estimate.df} degrees of freedom</td>}
+            {!compact && <td className="muted">One-sided 95%, {Number.isInteger(estimate.df) ? estimate.df : estimate.df.toFixed(1)} degrees of freedom</td>}
           </tr>
           <tr>
             <td>= lower bound</td>
@@ -80,7 +80,7 @@ function moneyRows(e: ScaledEstimate) {
   return [
     { k: "Point estimate", v: `${formatUsd(e.point)}/wk`, mono: true },
     { k: "Standard error", v: formatUsd(e.se), mono: true },
-    { k: "Degrees of freedom", v: String(e.df), mono: true },
+    { k: "Degrees of freedom", v: Number.isInteger(e.df) ? String(e.df) : e.df.toFixed(1), mono: true },
     { k: "Critical t, one-sided 95%", v: two(e.tcrit), mono: true },
     { k: "90% interval", v: `${formatUsd(e.ci[0])} to ${formatUsd(e.ci[1])}`, mono: true },
     { k: "Lower bound", v: `${formatUsd(e.lower)}/wk — the figure the mint starts from`, mono: true },
@@ -203,9 +203,12 @@ export function PersistenceChart({ series, verifiedCents, height = 120 }: { seri
   const padR = 12;
   const padT = 10;
   const padB = 22;
-  const ys = [...series.map((p) => p.y), verifiedCents, 0];
-  const lo = Math.min(...ys);
-  const hi = Math.max(...ys) || 1;
+  const ys = [...series.map((p) => p.y), verifiedCents];
+  const rawLo = Math.min(...ys);
+  const rawHi = Math.max(...ys);
+  const pad = (rawHi - rawLo || Math.abs(rawHi) || 1) * 0.25;
+  const lo = rawLo - pad;
+  const hi = rawHi + pad;
   const span = hi - lo || 1;
   const x = (i: number) => padL + (i / (series.length - 1)) * (w - padL - padR);
   const y = (v: number) => padT + (1 - (v - lo) / span) * (h - padT - padB);
@@ -222,7 +225,7 @@ export function PersistenceChart({ series, verifiedCents, height = 120 }: { seri
           </g>
         ))}
         <line x1={padL} x2={w - padR} y1={y(verifiedCents)} y2={y(verifiedCents)} stroke="var(--claim-book)" strokeDasharray="5 4" strokeWidth="1.5" />
-        <text x={w - padR} y={y(verifiedCents) - 4} textAnchor="end">
+        <text x={padL + 4} y={y(verifiedCents) + 12}>
           verified {formatUsd(verifiedCents)}/wk
         </text>
         <polyline points={line} fill="none" stroke="var(--claim-cau)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
