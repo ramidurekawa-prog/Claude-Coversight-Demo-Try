@@ -7,8 +7,9 @@
  * use. The UI is unaffected: it still speaks HTTP to /api/v1/* and never
  * touches the database or the fixture itself.
  *
- * Set STREAMLINE_EMBEDDED_API=1 to use this path; otherwise requests are
- * proxied to API_URL (the two-process layout used by `pnpm dev`).
+ * This path is used automatically wherever there is no second process to proxy
+ * to — any serverless host, unless API_URL names one. STREAMLINE_EMBEDDED_API
+ * forces the choice either way (1 = embed, 0 = proxy).
  */
 import { buildApp } from "@streamline/api/app";
 import { connectDatabase } from "@streamline/db";
@@ -16,7 +17,22 @@ import { connectDatabase } from "@streamline/db";
 /** The Fastify instance, typed from the builder so the web app needs no Fastify dependency of its own. */
 type ApiApp = ReturnType<typeof buildApp>;
 
-export const isEmbedded = () => process.env.STREAMLINE_EMBEDDED_API === "1";
+/** Hosts that run this app as a function rather than a process, so nothing listens on API_URL. */
+const SERVERLESS_HOST = () => !!(process.env.NETLIFY ?? process.env.VERCEL ?? process.env.AWS_LAMBDA_FUNCTION_NAME ?? process.env.FUNCTIONS_WORKER_RUNTIME);
+
+/**
+ * Embed unless there is something to proxy to. Deciding this by host rather
+ * than by a remembered environment variable matters: when the flag was the only
+ * signal, forgetting it on a deployment made every page fetch localhost:3001
+ * and fail, and a production Next.js build redacts that message on its way to
+ * the error boundary — so the whole site reads as an unexplained server error.
+ */
+export const isEmbedded = (): boolean => {
+  const flag = process.env.STREAMLINE_EMBEDDED_API;
+  if (flag === "1") return true;
+  if (flag === "0") return false;
+  return SERVERLESS_HOST() && !process.env.API_URL;
+};
 
 /** The public origin of this deployment: Netlify sets URL and DEPLOY_PRIME_URL. */
 export function publicOrigin(): string {
@@ -27,6 +43,13 @@ let instance: Promise<ApiApp> | null = null;
 
 function start(): Promise<ApiApp> {
   return (async () => {
+    // PGlite keeps its data in a file, which a serverless filesystem does not
+    // preserve; say so plainly rather than failing somewhere inside the driver.
+    if (SERVERLESS_HOST() && !process.env.DATABASE_URL) {
+      const missing = "DATABASE_URL is not set. This host runs the app as a function, where PGlite's data file cannot survive, so a Postgres connection string is required. Set DATABASE_URL (use the pooled one), then seed it once from your machine: DATABASE_URL='...' pnpm db:seed";
+      console.error(`[streamline] ${missing}`);
+      throw new Error(missing);
+    }
     // One small pool per instance: a serverless platform runs many of them.
     const conn = await connectDatabase({ poolMax: Number(process.env.STREAMLINE_PG_POOL_MAX ?? 1) });
     const origin = publicOrigin();

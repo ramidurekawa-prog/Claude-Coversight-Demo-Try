@@ -17,7 +17,15 @@ export async function serverApi<T>(schema: z.ZodType<T>, path: string, init: Req
   if (isEmbedded()) {
     return apiFetch(schema, path, { ...init, baseUrl: publicOrigin(), headers, cache: "no-store", fetchImpl: (input, requestInit) => embeddedApi(new Request(input as RequestInfo, requestInit)) });
   }
-  return apiFetch(schema, path, { ...init, baseUrl: process.env.API_URL ?? "http://localhost:3001", headers, cache: "no-store" });
+  const baseUrl = process.env.API_URL ?? "http://localhost:3001";
+  try {
+    return await apiFetch(schema, path, { ...init, baseUrl, headers, cache: "no-store" });
+  } catch (error) {
+    // A production Next.js build redacts this message before the error boundary
+    // sees it, so the reason has to reach the server log to be of any use.
+    if (error instanceof TypeError) console.error(`[streamline] the API at ${baseUrl} is not reachable from this process. Start it with \`pnpm dev\`, or set STREAMLINE_EMBEDDED_API=1 to host it in-process.`, error);
+    throw error;
+  }
 }
 
 /** Every shell page requires a session; nobody signed in is sent to /login. */

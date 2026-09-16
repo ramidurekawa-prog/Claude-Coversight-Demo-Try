@@ -10,7 +10,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <EmptyState
         icon={<AlertTriangle size={20} />}
         title={unreachable ? "The API is not reachable" : "This screen could not be loaded"}
-        description={unreachable ? "Start the API with `pnpm dev` (it listens on port 3001), then try again. Nothing on this screen is computed in the browser, so without the API there is nothing to show." : error.message}
+        description={unreachable ? "Start the API with `pnpm dev` (it listens on port 3001), then try again. Nothing on this screen is computed in the browser, so without the API there is nothing to show." : `${error.message} A deployed build redacts the reason here; the server log carries it in full.`}
         action={
           <Button variant="secondary" onClick={() => reset()}>
             Try again

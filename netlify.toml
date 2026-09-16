@@ -1,15 +1,17 @@
 # Netlify deployment for the Streamline demo.
 #
 # One site hosts everything: the Next.js UI and the API, which runs inside a
-# catch-all route handler (STREAMLINE_EMBEDDED_API=1) because a serverless
+# catch-all route handler, because a serverless
 # platform has no second process to proxy to.
 #
 # Set these in Site configuration → Environment variables:
 #   DATABASE_URL           Postgres connection string (use the POOLED one)
 #   BETTER_AUTH_SECRET     any long random string
-#   STREAMLINE_EMBEDDED_API   1
 #   STREAMLINE_SKIP_MIGRATIONS 1   (migrations and seeding run from your machine)
 #   STREAMLINE_PG_POOL_MAX     1   (every warm instance keeps its own pool)
+#
+# Embedding is detected from NETLIFY itself, so STREAMLINE_EMBEDDED_API is only
+# needed to override it (1 = embed, 0 = proxy to API_URL).
 #
 # If the build UI asks: Base directory = repository root, Package directory =
 # apps/web. Seed the database once before the first visit:

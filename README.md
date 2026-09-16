@@ -38,8 +38,9 @@ route handler, because a serverless platform has no second process to proxy to.
    ```
 
 3. **Set the environment variables** on the site: `DATABASE_URL`,
-   `BETTER_AUTH_SECRET` (any long random string), `STREAMLINE_EMBEDDED_API=1`,
-   `STREAMLINE_SKIP_MIGRATIONS=1`, `STREAMLINE_PG_POOL_MAX=1`.
+   `BETTER_AUTH_SECRET` (any long random string), `STREAMLINE_SKIP_MIGRATIONS=1`,
+   `STREAMLINE_PG_POOL_MAX=1`. Hosting the API in-process is detected from the
+   platform, so `STREAMLINE_EMBEDDED_API` is only needed to override it.
 4. **Deploy.** Netlify's Next.js runtime supports Next 13.5 and later. If the
    build UI asks, the base directory is the repository root and the package
    directory is `apps/web`.
@@ -50,6 +51,12 @@ locally, more against a remote database — and Netlify's functions stop at 10
 seconds on the free plan (26 on Pro), so advance in smaller steps there. And
 "Reset the demo" rewrites the whole register, which will exceed any function
 limit: reset by re-running `pnpm db:seed` against the database instead.
+
+**If a deployed page shows a bare server error,** read the function log rather
+than the page: a production Next.js build strips the reason on its way to the
+browser, and the server log carries it in full, prefixed `[streamline]`. On
+Netlify that is Deploys → the deploy → Functions, or the site's Logs tab. A
+missing `DATABASE_URL` and an unreachable API each say so there by name.
 
 To verify the deployed shape locally, with no Netlify involved:
 

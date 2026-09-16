@@ -146,7 +146,7 @@ change navigation emphasis and permitted actions (accept/approve/reverse/export)
 
 The same code runs in two layouts, chosen by one environment variable:
 
-| | `pnpm dev` / `pnpm demo` (two processes) | `STREAMLINE_EMBEDDED_API=1` (one process) |
+| | `pnpm dev` / `pnpm demo` (two processes) | serverless host, or `STREAMLINE_EMBEDDED_API=1` (one process) |
 | --- | --- | --- |
 | API | `apps/api` serves it on :3001 | the same `buildApp()` is built once per instance inside `apps/web/lib/embedded-api.ts` and driven through `fastify.inject()` — the entry point the API's own tests use |
 | Browser `/api/*` | proxied to :3001 by the catch-all route | handled in-process by that route |
@@ -156,6 +156,14 @@ The same code runs in two layouts, chosen by one environment variable:
 
 The UI is identical in both: pages only ever speak HTTP shapes to `/api/v1/*`. Only the two files
 that *host* the API may import `db`; `apps/web/test/layering.test.ts` enforces that.
+
+Which layout applies is read from the host (`NETLIFY`, `VERCEL`, `AWS_LAMBDA_FUNCTION_NAME`,
+`FUNCTIONS_WORKER_RUNTIME`) rather than from a flag someone has to remember, because the failure
+when the flag is forgotten is silent: every page fetches `localhost:3001`, and a production build
+redacts that message before the error boundary sees it, so a correctly built site reads as an
+unexplained server error. `STREAMLINE_EMBEDDED_API` still overrides (1 embed, 0 proxy), and the two
+configuration failures that cannot be recovered from — no `DATABASE_URL` on a serverless host, an
+unreachable API process — are written to the server log prefixed `[streamline]`.
 
 Serverless constraints worth knowing: migrations and seeding run from a developer machine against
 `DATABASE_URL` (`STREAMLINE_SKIP_MIGRATIONS=1` on the host, because 250,000 fixture rows do not fit
