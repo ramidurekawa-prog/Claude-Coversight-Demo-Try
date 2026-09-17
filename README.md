@@ -27,30 +27,33 @@ route handler, because a serverless platform has no second process to proxy to.
 `netlify.toml` is checked in.
 
 1. **A Postgres database.** PGlite keeps its data in a file, which a serverless
-   filesystem does not preserve, so a deployment needs a real server. Netlify DB
-   (Neon) or any Neon/Supabase instance works. Take the **pooled** connection
-   string.
-2. **Migrate and seed it once, from your machine.** The fixture writes about
-   250,000 rows, which is far more than a function invocation has time for:
-
-   ```
-   DATABASE_URL='<pooled connection string>' pnpm db:seed
-   ```
-
-3. **Set the environment variables** on the site: `DATABASE_URL`,
-   `BETTER_AUTH_SECRET` (any long random string), `STREAMLINE_SKIP_MIGRATIONS=1`,
+   filesystem does not preserve, so a deployment needs a real server. Netlify's
+   own database extension (Neon) is one click and sets `NETLIFY_DATABASE_URL`
+   for you, which this app reads; any Neon or Supabase instance works too — take
+   the **pooled** connection string and set it as `DATABASE_URL`.
+2. **Set the other environment variables** on the site: `BETTER_AUTH_SECRET`
+   (any long random string), `STREAMLINE_SKIP_MIGRATIONS=1`,
    `STREAMLINE_PG_POOL_MAX=1`. Hosting the API in-process is detected from the
    platform, so `STREAMLINE_EMBEDDED_API` is only needed to override it.
-4. **Deploy.** Netlify's Next.js runtime supports Next 13.5 and later. If the
-   build UI asks, the base directory is the repository root and the package
-   directory is `apps/web`.
+3. **Deploy.** The build migrates and seeds the database before it builds the
+   site (`pnpm db:seed:deploy`, about 10 seconds against a hosted Postgres) —
+   a build has fifteen minutes and a function has ten seconds, so this is the
+   only place the fixture fits. It is idempotent: an already-seeded database is
+   a no-op, so redeploying costs nothing. No terminal needed. Netlify's Next.js
+   runtime supports Next 13.5 and later; if the build UI asks, the base
+   directory is the repository root and the package directory is `apps/web`.
 
-Two things to know before you show it to anyone. Advancing the demo clock
+   To seed from your own machine instead — a database the build cannot reach,
+   or a deliberate re-seed — run `DATABASE_URL='<pooled url>' pnpm db:seed`.
+
+One thing to know before you show it to anyone. Advancing the demo clock
 rebuilds a slice of the register and re-runs the engine — about 3 seconds
 locally, more against a remote database — and Netlify's functions stop at 10
-seconds on the free plan (26 on Pro), so advance in smaller steps there. And
-"Reset the demo" rewrites the whole register, which will exceed any function
-limit: reset by re-running `pnpm db:seed` against the database instead.
+seconds on the free plan (26 on Pro), so advance in smaller steps there.
+"Reset the demo" rewrites the whole register and will exceed any function
+limit as well: reset a deployment by redeploying it with
+`pnpm db:seed:deploy --force`, or by running `pnpm db:seed --force` against the
+database from your machine.
 
 **If a deployed page shows a bare server error,** open `/api/v1/health` on the
 site. It needs no session, holds no secrets, and diagnoses the deployment:
@@ -65,7 +68,8 @@ site. It needs no session, holds no secrets, and diagnoses the deployment:
 four states a deployment gets stuck in are no `DATABASE_URL`, a database that
 cannot be reached, one with no tables (migrations skipped and never run), and
 one with tables but no rows (never seeded) — the last two are both fixed by
-running `DATABASE_URL='<pooled url>' pnpm db:seed` once.
+redeploying, since the build migrates and seeds, or by running
+`DATABASE_URL='<pooled url>' pnpm db:seed` once from your machine.
 
 The function log carries the same reasons in full, prefixed `[streamline]`,
 which is where to look if health itself does not answer: a production Next.js

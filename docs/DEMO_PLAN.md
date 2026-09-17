@@ -150,7 +150,8 @@ recoverable figure on Home, Today, Profit Recovery, Finding detail, and Actions.
 | 10 | Manual walkthrough + fixes + docs refresh | done | Every surface screenshot-reviewed on desktop and phone as owner, GM and the empty tenant; fixes landed (shell grid, decaying-claim confidence word, parked decisions) |
 | 11 | Deployable from one Netlify site: API in-process, hosted Postgres | done | Host-detected, verified locally against a real Postgres: seed 7.5s, every surface 115–216ms |
 | 12 | A broken deployment explains itself | done | `/api/v1/health` diagnoses the four stuck states and is served even when the boot fails; the boundary above the app shell, and sign-in, show its remedy instead of "a server error occurred". 12 new tests |
-| 13 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
+| 13 | The deployment sets itself up: build-step seed, host-provisioned database variables | done | `pnpm db:seed:deploy` migrates and seeds in the build (8.4s, idempotent); `NETLIFY_DATABASE_URL` is read; no terminal needed |
+| 14 | Port the Toast ingestion + simulator from the reference (not needed for the demo) | later | |
 
 ## 8. Decisions taken without asking (and why)
 

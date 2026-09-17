@@ -12,7 +12,7 @@
  * forces the choice either way (1 = embed, 0 = proxy).
  */
 import { buildApp } from "@streamline/api/app";
-import { connectDatabase } from "@streamline/db";
+import { connectDatabase, databaseUrl } from "@streamline/db";
 
 /** The Fastify instance, typed from the builder so the web app needs no Fastify dependency of its own. */
 type ApiApp = ReturnType<typeof buildApp>;
@@ -71,8 +71,8 @@ function start(): Promise<ApiApp> {
   return (async () => {
     // PGlite keeps its data in a file, which a serverless filesystem does not
     // preserve; say so plainly rather than failing somewhere inside the driver.
-    if (SERVERLESS_HOST() && !process.env.DATABASE_URL) {
-      const missing = "DATABASE_URL is not set. This host runs the app as a function, where PGlite's data file cannot survive, so a Postgres connection string is required. Set DATABASE_URL (use the pooled one), then seed it once from your machine: DATABASE_URL='...' pnpm db:seed";
+    if (SERVERLESS_HOST() && !databaseUrl()) {
+      const missing = "DATABASE_URL is not set. This host runs the app as a function, where PGlite's data file cannot survive, so a Postgres connection string is required. Set DATABASE_URL (use the pooled one; NETLIFY_DATABASE_URL is read too), then redeploy — the build migrates and seeds the database — or seed it yourself once: DATABASE_URL='...' pnpm db:seed";
       console.error(`[streamline] ${missing}`);
       throw new Error(missing);
     }

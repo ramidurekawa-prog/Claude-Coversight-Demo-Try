@@ -180,11 +180,18 @@ hands you, and the alternative is a connection that either fails with a `pg_hba`
 in the clear. `sslmode=disable` and `sslmode=no-verify` (or `STREAMLINE_PG_SSL_NO_VERIFY=1`) are the
 only ways down from that, and both are explicit; `packages/db/test/connect.test.ts` pins the policy.
 
-Serverless constraints worth knowing: migrations and seeding run from a developer machine against
-`DATABASE_URL` (`STREAMLINE_SKIP_MIGRATIONS=1` on the host, because 250,000 fixture rows do not fit
-in a function invocation), the connection pool is one per instance, and advancing the demo clock —
-which rebuilds a slice of the register and re-runs the engine — is the one request that can approach
-a function timeout. `README.md` carries the Netlify procedure.
+Serverless constraints worth knowing. Migrations and the seed run in the **build step**
+(`pnpm db:seed:deploy`), not in a function and not from a developer's machine: the fixture writes
+about 61,000 register rows, which does not fit in a ten-second invocation, while a build has fifteen
+minutes and the same environment variables. That script forces migrations on — the runtime sets
+`STREAMLINE_SKIP_MIGRATIONS=1` to stop cold starts racing, and honouring it during the build would
+leave an empty database behind a successful build — and it prefers the host's *unpooled* connection
+string, because a pooler in transaction mode is the wrong door for DDL. It is idempotent, so every
+deploy runs it. The connection string is read from `DATABASE_URL` or, when the host provisions the
+database itself, `NETLIFY_DATABASE_URL`; reading only the former meant a one-click database still
+reported none. The connection pool is one per instance, and advancing the demo clock — which
+rebuilds a slice of the register and re-runs the engine — is the one request that can approach a
+function timeout. `README.md` carries the Netlify procedure.
 
 ## Engine purity
 

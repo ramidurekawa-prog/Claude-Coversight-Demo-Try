@@ -18,6 +18,7 @@
     "e2e": "pnpm --filter @streamline/web build && playwright test",
     "db:reset": "pnpm --filter @streamline/db reset",
     "db:seed": "pnpm --filter @streamline/db seed",
+    "db:seed:deploy": "pnpm --filter @streamline/db seed:deploy",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "dev:api": "pnpm --filter @streamline/api dev",
     "dev:web": "pnpm --filter @streamline/web dev",

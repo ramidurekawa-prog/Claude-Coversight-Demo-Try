@@ -19,6 +19,27 @@ import pg from "pg";
 import type { StreamlineDb } from "./repositories";
 import * as schema from "./schema";
 
+/**
+ * The connection string, wherever the host put it.
+ *
+ * Netlify's own database extension sets NETLIFY_DATABASE_URL (and an unpooled
+ * twin) rather than DATABASE_URL, so reading only the latter meant that adding
+ * a database with one click still left the site saying it had none.
+ */
+export function databaseUrl(): string | undefined {
+  return process.env.DATABASE_URL ?? process.env.NETLIFY_DATABASE_URL ?? process.env.NETLIFY_DATABASE_URL_UNPOOLED ?? undefined;
+}
+
+/**
+ * The string to run migrations and the seed through. A connection pooler in
+ * transaction mode is the wrong door for DDL and for a long import, so the
+ * unpooled twin wins here when the host offers one — the opposite of the
+ * runtime preference.
+ */
+export function migrationUrl(): string | undefined {
+  return process.env.NETLIFY_DATABASE_URL_UNPOOLED ?? databaseUrl();
+}
+
 /** Hosts where a plaintext connection stays inside the machine. */
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", ""]);
 
@@ -77,7 +98,7 @@ export interface ConnectOptions {
 }
 
 export async function connectDatabase(opts: ConnectOptions = {}): Promise<Connection> {
-  const url = opts.url ?? process.env.DATABASE_URL;
+  const url = opts.url ?? databaseUrl();
   const shouldMigrate = opts.migrate ?? process.env.STREAMLINE_SKIP_MIGRATIONS !== "1";
   if (url) {
     const pool = new pg.Pool({ connectionString: url, max: opts.poolMax ?? Number(process.env.STREAMLINE_PG_POOL_MAX ?? 10), ...pgSslOption(url) });

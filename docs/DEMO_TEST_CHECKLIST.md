@@ -112,6 +112,13 @@ API is hosted in-process and the database is a real Postgres. What was verified,
 - [x] The diagnosis is reachable in the state it diagnoses: when the boot fails, the API is served
       without a database so health still answers 200 and every other route answers 503 with the
       reason, where both used to be an empty 500.
+- [x] The deployment seeds itself: `pnpm db:seed:deploy` runs in the build step, forces migrations
+      (the runtime's `STREAMLINE_SKIP_MIGRATIONS=1` would otherwise leave an empty database), seeds a
+      fresh Postgres in 8.4s, no-ops on the second run, and skips with a warning and exit 0 when no
+      connection string is set — so a founder needs no terminal.
+- [x] The host's own database variable is enough: with `NETLIFY_DATABASE_URL` only (no
+      `DATABASE_URL`), the build seeds and the running site serves Home's figures and every surface
+      (M, browser-rendered; A: `packages/db/test/connect.test.ts`).
 - [ ] A real Netlify deployment end to end — the founder's site is the only place this can be
       confirmed; everything it depends on is verified above.
 

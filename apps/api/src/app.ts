@@ -4,7 +4,7 @@
  * against the contract before it leaves. Nothing here computes a dollar.
  */
 import { ActionsResponse, AdvanceClockBody, AdvanceClockResponse, AuditQuery, AuditResponse, ChangeDetailResponse, ChangesResponse, CompleteActionBody, CompleteActionResponse, DataResponse, DecideFindingBody, DecideFindingResponse, FindingDetailResponse, FindingsQuery, FindingsResponse, HealthResponse, HomeResponse, MeResponse, ProofPacketResponse, ProofResponse, RecoveryResponse, ResetResponse, ScopeQuery, TodayResponse } from "@streamline/contracts";
-import { advanceClock, createRepositories, declOf, resetOrg, type StreamlineDb } from "@streamline/db";
+import { advanceClock, createRepositories, databaseUrl, declOf, resetOrg, type StreamlineDb } from "@streamline/db";
 import { accrual, addDays, bridge, CALC_VERSION, canFindingTransition, conversions, daysBetween, daysInMonth, ENGINE_VERSION, evaluateIntervention, feedRisk, FINDING_STATES, FINDING_TRANSITIONS, findingConfidence, funnel, IllegalTransitionError, IN_FLIGHT_STATES, inScope, interventionConfidence, kpis, monthOf, plainOutcome, plainProposal, proposeIntervention, QUEUE_POLICY_VERSION, queue, confidenceWord, type FindingState, type InterventionDecl, type LedgerAction, type LedgerFinding } from "@streamline/engine";
 import { loadRegister } from "@streamline/db";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
@@ -113,7 +113,7 @@ export function buildApp({ logger = false, db, dbPing, authConfig, deployment = 
     // string, a reachable database with no tables (migrations skipped and never
     // run), and tables with no rows (never seeded). Each one is named here
     // because the page that fails cannot say it.
-    const configured = !!process.env.DATABASE_URL;
+    const configured = !!databaseUrl();
     let migrated = false;
     let orgs: Array<{ fixtureVersion: string | null; asOf: string }> = [];
     if (db && dbState === "ok") {
@@ -124,7 +124,11 @@ export function buildApp({ logger = false, db, dbPing, authConfig, deployment = 
         migrated = false;
       }
     }
-    const diagnosis = !configured && deployment === "embedded" ? "DATABASE_URL is not set. A host that runs this app as a function cannot keep PGlite's data file, so a Postgres connection string is required. Set DATABASE_URL to the pooled one, then seed it once from your machine: DATABASE_URL='...' pnpm db:seed" : dbState !== "ok" ? "The database is not reachable. Check DATABASE_URL, and that it is the pooled connection string." : !migrated ? "The database is reachable but has no tables. Run the migrations and the seed against it once: DATABASE_URL='...' pnpm db:seed" : !orgs.length ? "The tables exist but hold no data. Seed it once: DATABASE_URL='...' pnpm db:seed" : undefined;
+    // On a host that builds before it serves, the remedy for an empty database
+    // is a redeploy — the build migrates and seeds it — so say that rather than
+    // a command the person reading this may have no terminal for.
+    const seedIt = deployment === "embedded" ? "Redeploy the site: the build migrates and seeds it. Or do it yourself once: DATABASE_URL='...' pnpm db:seed" : "Seed it once: DATABASE_URL='...' pnpm db:seed";
+    const diagnosis = !configured && deployment === "embedded" ? `DATABASE_URL is not set. A host that runs this app as a function cannot keep PGlite's data file, so a Postgres connection string is required. Set DATABASE_URL to the pooled one (a host that provisions the database itself may have set NETLIFY_DATABASE_URL, which is read too), then redeploy: the build migrates and seeds it. Or seed it yourself: DATABASE_URL='...' pnpm db:seed` : dbState !== "ok" ? "The database is not reachable. Check DATABASE_URL, and that it is the pooled connection string." : !migrated ? `The database is reachable but has no tables. ${seedIt}` : !orgs.length ? `The tables exist but hold no data. ${seedIt}` : undefined;
 
     return contract(reply, HealthResponse, {
       ok: true,

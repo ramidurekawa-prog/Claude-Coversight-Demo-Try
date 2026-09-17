@@ -17,7 +17,8 @@
     "test": "vitest run",
     "generate": "drizzle-kit generate",
     "reset": "tsx src/scripts/reset.ts",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "seed:deploy": "tsx src/scripts/seed-deploy.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.1",

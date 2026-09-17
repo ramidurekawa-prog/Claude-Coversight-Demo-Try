@@ -5,20 +5,28 @@
 # platform has no second process to proxy to.
 #
 # Set these in Site configuration → Environment variables:
-#   DATABASE_URL           Postgres connection string (use the POOLED one)
+#   DATABASE_URL           Postgres connection string (use the POOLED one).
+#                          Netlify's own database extension sets
+#                          NETLIFY_DATABASE_URL instead, which is read too, so
+#                          adding a database with one click needs nothing here.
 #   BETTER_AUTH_SECRET     any long random string
-#   STREAMLINE_SKIP_MIGRATIONS 1   (migrations and seeding run from your machine)
+#   STREAMLINE_SKIP_MIGRATIONS 1   (the build migrates; cold starts should not)
 #   STREAMLINE_PG_POOL_MAX     1   (every warm instance keeps its own pool)
 #
 # Embedding is detected from NETLIFY itself, so STREAMLINE_EMBEDDED_API is only
 # needed to override it (1 = embed, 0 = proxy to API_URL).
 #
 # If the build UI asks: Base directory = repository root, Package directory =
-# apps/web. Seed the database once before the first visit:
-#   DATABASE_URL='<your pooled url>' pnpm db:seed
+# apps/web.
 
+# The build migrates and seeds the database before building the site: a
+# function has ten seconds, a build has fifteen minutes and the same
+# environment, so this is the only place the fixture fits. It is idempotent —
+# already-seeded databases are a no-op — and it skips with a warning rather
+# than failing when no connection string is set, because the site it produces
+# explains that itself.
 [build]
-  command = "pnpm --filter @streamline/web build"
+  command = "pnpm db:seed:deploy && pnpm --filter @streamline/web build"
   publish = "apps/web/.next"
 
 [build.environment]
